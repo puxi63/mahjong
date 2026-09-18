@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.puxi63.twa",
+        "sha256_cert_fingerprints": ["CB:6A:6A:28:07:75:D4:58:7B:3E:71:47:B2:F3:CB:95:57:7C:78:D9:AB:D9:68:3D:A9:81:36:8B:31:E5:37:93"]
+      }
+    }]
