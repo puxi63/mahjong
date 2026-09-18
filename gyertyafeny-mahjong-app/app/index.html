@@ -155,6 +155,9 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 .key .ic{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .key:active{transform:translateY(1px);background:rgba(227,177,85,.2);border-color:var(--candle)}
 .key:disabled{opacity:.3;pointer-events:none}
+.key.urge{animation:urge .9s ease-in-out infinite}
+@keyframes urge{0%,100%{border-color:var(--hair);background:linear-gradient(180deg,rgba(236,226,202,.10),rgba(236,226,202,.03))}
+  50%{border-color:var(--candle);background:rgba(227,177,85,.26)}}
 .key:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
 .n{font-variant-numeric:tabular-nums;opacity:.7}
 
@@ -202,6 +205,7 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
   display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s;
 }
 .act:active{transform:translateY(2px);box-shadow:0 1px 0 #8d5f1f,0 4px 10px rgba(0,0,0,.4)}
+.act:disabled{opacity:.42;pointer-events:none}
 .act.quiet{
   background:transparent;border:1px solid rgba(236,226,202,.18);color:var(--ivory-dim);
   box-shadow:none;font-size:12px;padding:11px}
@@ -305,7 +309,7 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 <div id="stage"><div id="board"></div></div>
 
 <footer>
-  <button class="key" id="bUndo"><span class="ic">↩</span>Vissza</button>
+  <button class="key" id="bMenu"><span class="ic">⌂</span>Főmenü</button>
   <button class="key" id="bHint"><span class="ic">🔮</span>Tipp <span class="n" id="hintN">3</span></button>
   <button class="key" id="bShuf"><span class="ic">🌀</span>Keverés <span class="n" id="shufN">2</span></button>
   <button class="key" id="bShop"><span class="ic">🧰</span>Tár</button>
@@ -338,6 +342,17 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
       <button class="act quiet" id="bStats">Napló</button>
       <button class="act quiet" id="bReset">Haladás törlése</button>
     </div>
+  </div>
+</div>
+
+<div class="veil" id="veilAsk">
+  <div class="panel">
+    <div class="seal" id="askSeal">⚠</div>
+    <h2 id="askTitle">Biztos?</h2>
+    <p id="askText"></p>
+    <div class="rule"></div>
+    <button class="act" id="askYes">Igen</button>
+    <button class="act quiet" id="askNo">Mégsem</button>
   </div>
 </div>
 
@@ -383,9 +398,13 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
     <div class="coinline" id="endCoins"></div>
     <p class="sub" id="endBest"></p>
     <div class="rule"></div>
+    <button class="act" id="bRescue"><span>🪄</span><span id="rescueText">Mentőöv</span></button>
     <button class="act" id="bNext"><span>✦</span>Következő szint</button>
     <button class="act quiet" id="bShop2">Tár megnyitása</button>
-    <button class="act quiet" id="bAgainLvl">Ez a szint újra</button>
+    <div class="pair">
+      <button class="act quiet" id="bAgainLvl">Ez a szint újra</button>
+      <button class="act quiet" id="bEndMenu">Főmenü</button>
+    </div>
   </div>
 </div>
 
@@ -773,8 +792,11 @@ function dealSolvable(P,R,sc,rnd){
 /* ================= játék ================= */
 /* NB: this used to be called "history" and shadowed window.history,
    which made history.pushState() unreachable for the back-button handling. */
-let P=[],R=null,tiles=[],present=[],sel=null,moveLog=[],total=0;
+let P=[],R=null,tiles=[],present=[],sel=null,total=0;
 let hints=3,shuffles=2,usedAid=0,par=0,t0=0,timer=null,running=false,memLock=false;
+let rescues=0, lastBanked=0;
+/* every lifeline inside the same level costs more than the one before */
+const rescueCost=()=>Math.round(150*Math.pow(1.8,rescues));
 const board=$('board'), stage=$('stage');
 
 function startLevel(n,depth){
@@ -800,7 +822,7 @@ function startLevel(n,depth){
   memLock=false;
   tiles=P.map((p,i)=>({...p,s:syms[i],i,el:null}));
   present=new Array(total).fill(true);
-  sel=null; moveLog=[]; usedAid=0;
+  sel=null; usedAid=0; rescues=0; lastBanked=0;
   const zen=mode==='zen';
   hints=zen?99:3+upg.tipp; shuffles=zen?99:2+upg.kever;
   par=Math.round(total*1.5*parMult());
@@ -863,7 +885,7 @@ function tap(t){
     present[a.i]=present[t.i]=false;
     sparkle(a); sparkle(t);
     a.el.classList.add('gone'); t.el.classList.add('gone');
-    moveLog.push([a,t]); beep('ok');
+    beep('ok');
     setTimeout(()=>{ refresh(); check(); },170);
   }else if(mem){
     /* show both for a moment, then turn them back down */
@@ -889,16 +911,19 @@ function check(){
   if(findMove()) return;
   /* Zen never fails: it just reshuffles the board for you */
   if(mode==='zen'){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); return; }
-  if(shuffles<=0) finish(false);
+  if(shuffles<=0){ finish(false); return; }
+  /* Out of moves but shuffles left: say so instead of leaving a dead board. */
+  toast('Nincs több lépés — keverj!');
+  const b=$('bShuf'); b.classList.add('urge');
+  setTimeout(()=>b.classList.remove('urge'),4000);
+  beep('no');
 }
-$('bUndo').onclick=()=>{
-  const last=moveLog.pop(); if(!last) return;
-  for(const t of last){
-    present[t.i]=true; t.el.classList.remove('gone');
-    if(mode==='mem') t.el.classList.add('down');
-  }
-  if(sel){ sel.el.classList.remove('sel'); sel=null; }
-  refresh(); beep('tap');
+$('bMenu').onclick=()=>{
+  if(!inProgress()) return toMenu();
+  const n=present.filter(p=>!p).length;
+  ask('⌂','Vissza a főmenübe?',
+      'A szintet elölről kezded, amikor visszatérsz — '+n+' felvett csempe vész el.',
+      'Főmenü', toMenu);
 };
 $('bHint').onclick=()=>{
   if(hints<=0) return;
@@ -950,11 +975,18 @@ function doShuffle(free){
   memLock=false; refresh();
   return true;
 }
-$('bRestart').onclick=()=>startLevel(level);
+$('bRestart').onclick=()=>{
+  if(!inProgress()) return startLevel(level);
+  const n=present.filter(p=>!p).length;
+  ask('↺','Szint újrakezdése?',
+      'Ugyanezt a pályát kapod elölről — '+n+' felvett csempe vész el.',
+      'Újrakezdem', ()=>startLevel(level));
+};
 
 /* ---------------- óra, zárás ---------------- */
 function resetClock(){ clearInterval(timer); timer=null; running=false; $('uiTime').textContent='0:00'; }
-function startClock(){ if(running) return; running=true; t0=Date.now();
+function startClock(){ if(running) return; running=true; t0=Date.now(); tickClock(); }
+function tickClock(){ clearInterval(timer);
   timer=setInterval(()=>{ $('uiTime').textContent=fmt((Date.now()-t0)/1000|0); },500); }
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
@@ -962,7 +994,7 @@ function finish(won){
   clearInterval(timer);
   const secs=running?((Date.now()-t0)/1000|0):0;
   const daily=mode==='daily';
-  stAdd('time',secs);
+  stAdd('time',secs); lastBanked=secs;   /* a lifeline refunds this, see bRescue */
   if(won){
     const st = usedAid===0&&secs<=par ? 3 : (usedAid<=1&&secs<=par*1.6 ? 2 : 1);
     const bestKey = daily?'gm_dbest_'+dailyDay:'gm_best_'+(mode==='adv'?level:mode+level);
@@ -1019,10 +1051,15 @@ function finish(won){
     $('endTitle').textContent='Elakadt';
     $('endStars').innerHTML=''; $('endCoins').textContent='';
     $('endTime').textContent=fmt(secs);
-    $('endText').textContent='A maradék csempék egymást zárják, és elfogyott a keverés. Lépj vissza néhányat, vagy kezdd újra a szintet.';
+    $('endText').textContent='A maradék csempék egymást zárják, és elfogyott a keverés. Mentőövvel ott folytatod, ahol abbahagytad — vagy kezdd a szintet elölről, a haladásod megmarad.';
     $('endBest').textContent=''; $('bNext').style.display='none';
     $('bAgainLvl').textContent=daily?'A mai pálya újra':'Ez a szint újra';
   }
+  /* Lifeline: pay coins for one more shuffle and carry on where you stopped */
+  const cost=rescueCost();
+  $('bRescue').style.display=won?'none':'';
+  $('bRescue').disabled=coins<cost;
+  $('rescueText').textContent='Mentőöv — '+cost+' 🪙';
   checkAch();
   $('veilEnd').classList.add('on'); armBack();
 }
@@ -1123,6 +1160,28 @@ const openShop=()=>{ drawShop(); $('veilShop').classList.add('on'); armBack(); b
 $('bShop').onclick=openShop; $('bShop2').onclick=openShop; $('uiPurse').onclick=openShop;
 $('bCloseShop').onclick=()=>{ $('veilShop').classList.remove('on'); beep('tap'); };
 
+/* ---------------- megerősítés ----------------
+   One reusable yes/no panel for everything that throws away progress. */
+let askFn=null;
+function ask(seal,title,text,yesLabel,fn){
+  $('askSeal').textContent=seal;
+  $('askTitle').textContent=title;
+  $('askText').textContent=text;
+  $('askYes').textContent=yesLabel;
+  askFn=fn;
+  $('veilAsk').classList.add('on'); armBack(); beep('tap');
+}
+$('askYes').onclick=()=>{
+  const f=askFn; askFn=null;
+  $('veilAsk').classList.remove('on');
+  if(f) f();
+};
+$('askNo').onclick=()=>{ askFn=null; $('veilAsk').classList.remove('on'); beep('tap'); };
+/* only worth asking once the player has actually invested moves in this level */
+function inProgress(){
+  return !$('veilStart').classList.contains('on') && present.some(p=>!p);
+}
+
 /* ---------------- mód, napi kihívás, napló ---------------- */
 function setMode(m){
   if(!LVKEY[m]) m='adv';
@@ -1212,7 +1271,23 @@ $('bGo').onclick=()=>{
 };
 $('bNext').onclick=()=>{ $('veilEnd').classList.remove('on'); startLevel(level+1); };
 $('bAgainLvl').onclick=()=>{ $('veilEnd').classList.remove('on'); startLevel(level); };
-$('bReset').onclick=()=>{
+$('bEndMenu').onclick=()=>toMenu();
+$('bRescue').onclick=()=>{
+  const cost=rescueCost();
+  if(coins<cost){ beep('no'); return; }
+  if(!doShuffle(true)){ toast('Ezt a táblát már nem lehet megkeverni'); beep('no'); return; }
+  setCoins(coins-cost,true);
+  rescues++; usedAid++;
+  stAdd('time',-lastBanked); lastBanked=0;   /* not a finished level after all */
+  if(running) tickClock();                   /* the clock keeps running from t0 */
+  $('veilEnd').classList.remove('on');
+  toast('Mentőöv — megkevertem a maradékot');
+  beep('hint');
+};
+$('bReset').onclick=()=>ask('☠','Minden haladás törlése?',
+  'Szintek, tallérok, a Tár gyűjteménye, a kitűzők és a napi sorozat is elvész. Ez nem vonható vissza — előbb mentsd ki a kódot a Tárból, ha meg akarod tartani.',
+  'Törlöm', wipeAll);
+function wipeAll(){
   save('gm_level','1'); save('gm_mem_level','1'); save('gm_zen_level','1');
   save('gm_coins','0'); save('gm_owned',JSON.stringify(BASE_OWNED));
   save('gm_upg','{}'); save('gm_rank','');
@@ -1225,7 +1300,7 @@ $('bReset').onclick=()=>{
   curSkin='sk0'; curPack='pk0'; curBg='bg0'; SYMBOLS=PACKS.pk0.s;
   setCoins(0); applyStyles(); $('startSub').textContent='Végtelen szintek egy elcsendesedett kastélyban.';
   refreshStart(); toast('Minden nulláról indul'); beep('tap');
-};
+}
 refreshStart();
 
 /* ---------------- Android back button ----------------
@@ -1239,6 +1314,9 @@ function armBack(){
   try{ history.pushState({gm:1},''); backArmed=true; }catch(e){}
 }
 function backStep(){
+  if($('veilAsk').classList.contains('on')){
+    askFn=null; $('veilAsk').classList.remove('on'); beep('tap'); return true;
+  }
   for(const id of ['veilStats','veilDaily','veilShop']){
     if($(id).classList.contains('on')){
       $(id).classList.remove('on'); beep('tap'); return true;
@@ -1247,12 +1325,16 @@ function backStep(){
   if($('veilEnd').classList.contains('on')){
     $('veilEnd').classList.remove('on'); startLevel(level); return true;
   }
-  if(!$('veilStart').classList.contains('on')){
-    clearInterval(timer); timer=null; running=false;
-    $('veilStart').classList.add('on'); refreshStart();
-    beep('tap'); return true;
-  }
+  if(!$('veilStart').classList.contains('on')){ toMenu(); return true; }
   return false;
+}
+/* Leaving a level abandons it — the same thing the system back button does. */
+function toMenu(){
+  clearInterval(timer); timer=null; running=false;
+  for(const id of ['veilShop','veilDaily','veilStats','veilEnd','veilAsk']) $(id).classList.remove('on');
+  askFn=null;
+  $('veilStart').classList.add('on'); refreshStart();
+  beep('tap');
 }
 addEventListener('popstate',()=>{ backArmed=false; if(backStep()) armBack(); });
 
