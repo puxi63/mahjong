@@ -1,7 +1,7 @@
 /* Gyertyafény Mahjong — offline gyorsítótár.
    A verziószámot emeld, ha frissítetted az index.html-t: így a telefon
    a következő indításkor biztosan az új változatot tölti be. */
-const CACHE = 'gyertyafeny-v2';
+const CACHE = 'gyertyafeny-v4';
 
 const FILES = [
   './',
