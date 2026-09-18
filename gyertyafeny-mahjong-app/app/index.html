@@ -59,16 +59,16 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   border:1px solid var(--hair);border-radius:4px 4px 19px 19px;
   box-shadow:inset 0 0 14px rgba(227,177,85,.18), 0 2px 10px rgba(0,0,0,.5);
 }
-.sigil b{font-family:Cinzel,serif;font-size:16px;font-weight:600;color:var(--candle);line-height:1}
-.sigil i{position:absolute;top:4px;font-size:8px;color:var(--ivory-dim);font-style:normal;letter-spacing:.08em}
+.sigil b{font-family:Cinzel,serif;font-size:17px;font-weight:600;color:var(--candle);line-height:1}
+.sigil i{position:absolute;top:4px;font-size:8.5px;color:var(--ivory-dim);font-style:normal;letter-spacing:.08em}
 .hinfo{min-width:0;flex:1}
-.hinfo h1{margin:0;font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:.05em;color:var(--ivory);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hinfo p{margin:1px 0 0;font-size:12px;font-style:italic;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.clock{font-family:Cinzel,serif;font-size:17px;font-variant-numeric:tabular-nums;color:var(--ivory);letter-spacing:.02em}
+.hinfo h1{margin:0;font-family:Cinzel,serif;font-size:15.5px;font-weight:600;letter-spacing:.04em;color:var(--ivory);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hinfo p{margin:1px 0 0;font-size:12.5px;font-style:italic;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock{font-family:Cinzel,serif;font-size:19px;font-variant-numeric:tabular-nums;color:var(--ivory);letter-spacing:.02em}
 .purse{
-  display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:22px;
+  display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:22px;
   border:1px solid var(--hair);background:linear-gradient(180deg,rgba(227,177,85,.16),rgba(227,177,85,.05));
-  font-family:Cinzel,serif;font-size:14px;color:var(--candle);cursor:pointer;font-variant-numeric:tabular-nums;
+  font-family:Cinzel,serif;font-size:15px;color:var(--candle);cursor:pointer;font-variant-numeric:tabular-nums;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
 }
 .purse.pop{animation:pop .55s cubic-bezier(.2,1.6,.4,1)}
@@ -82,9 +82,10 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 /* touch-action:none so pinch-zoom and pan reach our pointer handlers
    instead of being swallowed by the browser's own gestures */
 #stage{position:relative;z-index:1;flex:1;min-height:0;overflow:hidden;touch-action:none}
+/* the vignette used to swallow the tiles at the edges — now it only frames them */
 #stage::after{
   content:"";position:absolute;inset:0;pointer-events:none;z-index:5;
-  background:radial-gradient(ellipse 78% 68% at 50% 48%, transparent 40%, rgba(6,9,17,.72) 100%);
+  background:radial-gradient(ellipse 96% 86% at 50% 48%, transparent 62%, rgba(6,9,17,.5) 100%);
 }
 /* candle pool under the layout */
 #stage::before{
@@ -93,12 +94,25 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   background:radial-gradient(ellipse at center, rgba(227,177,85,.13), transparent 68%);
 }
 #board{position:absolute;top:0;left:0;transform-origin:0 0}
+/* Only while a pinch or drag is running: promote the board to its own layer and
+   stop the per-tile transitions, so zooming moves a ready-made texture instead of
+   repainting 200 tiles with their shadows and filters every frame. */
+#board.gesture{will-change:transform}
+/* While the gesture runs the board is moving anyway, so the expensive trimmings
+   come off: 5 stacked shadows drop to 2, and the inner border pseudo-element goes.
+   Nothing here changes how the board looks when it sits still. */
+#board.gesture .tile{
+  transition:none;
+  box-shadow:0 2px 0 var(--t-lip),0 3px 6px rgba(0,0,0,.5)}
+#board.gesture .tile:not(.blocked){
+  box-shadow:0 2px 0 var(--t-lip),0 3px 6px rgba(0,0,0,.5),0 0 0 1px rgba(227,177,85,.34)}
+#board.gesture .tile::after{display:none}
 /* --dep is the tile's height in the stack, 0 = table level, 1 = top layer.
    Higher tiles catch more candlelight, so the stack reads as real depth. */
 .tile{
   --dep:0;
   position:absolute;width:40px;height:52px;border-radius:7px;
-  display:grid;place-items:center;font-size:23px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;font-size:27px;line-height:1;cursor:pointer;
   background:var(--t-face);border:1px solid var(--t-edge);color:var(--t-ink);
   box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),
              0 calc(5px + var(--dep)*7px) calc(9px + var(--dep)*10px) rgba(0,0,0,.55),
@@ -108,7 +122,8 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   transition:transform .14s cubic-bezier(.3,1.4,.5,1),filter .14s,opacity .24s,box-shadow .18s;
 }
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
-.tile.blocked{filter:brightness(calc(.52 + var(--dep)*.10)) saturate(.5)}
+/* dimmed enough to read as "not yet playable", light enough to still see the symbol */
+.tile.blocked{filter:brightness(calc(.66 + var(--dep)*.09)) saturate(.66)}
 /* Memória mód: a jel rejtve marad, amíg fel nem fordítod */
 .tile.down{color:transparent;text-shadow:none}
 .tile.down::before{
@@ -146,13 +161,13 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 /* ================= alsó sáv ================= */
 footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9px + env(safe-area-inset-bottom))}
 .key{
-  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
-  font-family:Cinzel,serif;font-size:10px;letter-spacing:.04em;color:var(--ivory);
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+  font-family:Cinzel,serif;font-size:11.5px;letter-spacing:.03em;color:var(--ivory);
   background:linear-gradient(180deg,rgba(236,226,202,.10),rgba(236,226,202,.03));
-  border:1px solid var(--hair);border-radius:10px;padding:9px 3px 7px;cursor:pointer;
+  border:1px solid var(--hair);border-radius:10px;padding:10px 3px 8px;cursor:pointer;
   transition:background .16s,transform .1s,border-color .16s;
 }
-.key .ic{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.key .ic{font-size:20px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .key:active{transform:translateY(1px);background:rgba(227,177,85,.2);border-color:var(--candle)}
 .key:disabled{opacity:.3;pointer-events:none}
 .key.urge{animation:urge .9s ease-in-out infinite}
@@ -710,16 +725,39 @@ const TERRACES=[
   {n:'kupola', f:(u,v,l)=>((u-.5)**2+(v-.5)**2) < .27-l*.035},
   {n:'perem', f:(u,v,l)=>l<2 || Math.max(Math.abs(u-.5),Math.abs(v-.5))>.16}
 ];
-function stack(m,W,H,maxL,ter){
+/* Build styles: how the layers pile up. A flat build spreads wide with few
+   layers, a tower keeps a small footprint and drills deep — same tile count,
+   but the tower's tiles are far bigger on a phone screen. */
+const BUILDS=[
+  {n:'lapos',   maxW:11, maxH:13, lay:3,  keep:.52, nb:3},
+  {n:'',        maxW:10, maxH:13, lay:6,  keep:.66, nb:3},
+  {n:'torony',  maxW:9,  maxH:12, lay:10, keep:.80, nb:2},
+  {n:'mélység', maxW:8,  maxH:11, lay:14, keep:.86, nb:2}
+];
+function stack(m,W,H,maxL,ter,keep,nb){
   let cur=[];
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const u=W>1?x/(W-1):.5,v=H>1?y/(H-1):.5; if(m(u,v)) cur.push({x,y,u,v}); }
   const out=cur.map(c=>({x:c.x,y:c.y,l:0}));
   for(let l=1;l<maxL;l++){
     const s=new Set(cur.map(c=>c.x+','+c.y));
-    let nx=cur.filter(c=>s.has((c.x-1)+','+c.y)&&s.has((c.x+1)+','+c.y)&&
-                         s.has(c.x+','+(c.y-1))&&s.has(c.x+','+(c.y+1)));
-    if(ter) nx=nx.filter(c=>ter(c.u,c.v,l));
+    const cx=cur.reduce((a,c)=>a+c.x,0)/cur.length,
+          cy=cur.reduce((a,c)=>a+c.y,0)/cur.length;
+    let nx=cur.map(c=>{
+      let n=0;
+      if(s.has((c.x-1)+','+c.y)) n++;
+      if(s.has((c.x+1)+','+c.y)) n++;
+      if(s.has(c.x+','+(c.y-1))) n++;
+      if(s.has(c.x+','+(c.y+1))) n++;
+      /* distance weighted for the 40x52 tile, so towers stay round on screen */
+      return {c,n,d:(c.x-cx)**2+(c.y-cy)**2*1.69};
+    }).filter(o=>o.n>=(nb||3));
+    if(ter) nx=nx.filter(o=>ter(o.c.u,o.c.v,l));
+    /* Keep the ~72% most sheltered cells rather than stripping a whole ring.
+       The tower narrows gradually, so the stack goes genuinely deep on a small
+       footprint — which is what keeps the tiles big on a phone. */
+    nx.sort((a,b)=>a.d-b.d);
+    nx=nx.slice(0,Math.floor(nx.length*(keep||.72))).map(o=>o.c);
     if(nx.length<2) break;
     nx.forEach(c=>out.push({x:c.x,y:c.y,l})); cur=nx;
   }
@@ -735,20 +773,35 @@ function buildLevel(seed,plain,diff){
   const mask=(u,v)=>{ if(sw){const t=u;u=v;v=t;} if(fx)u=1-u; if(fy)v=1-v; return sh.f(u,v); };
   /* terraces only once the stack is tall enough to show them, and never on a retry */
   const tp=TERRACES[Math.floor(rnd()*TERRACES.length)];
+  const bp=BUILDS[Math.floor(rnd()*BUILDS.length)];
   const ter=(plain||lv<8)?null:tp;
-  const target=Math.min(200,44+lv*5), maxL=Math.min(6,2+Math.floor(lv/6));
-  let W=9,H=7,pos=null;
-  for(let k=0;k<16;k++){
-    pos=stack(mask,W,H,maxL,ter&&ter.f);
-    if(pos.length<target*.85){ W++; if(W>H*1.7) H++; }
-    else if(pos.length>target*1.15){ if(W>6)W--; else if(H>5)H--; else break; }
-    else break;
-    if(W>22)W=22; if(H>13)H=13;
+  const bld=(plain||lv<5)?BUILDS[1]:bp;    /* the first levels stay simple */
+  /* A phone screen is portrait, so the board has to be too: a wide layout gets
+     squeezed until the tiles are unreadable. Grow height before width, keep the
+     footprint inside the build style's caps, and cap the tile count. */
+  const target=Math.min(150,40+lv*4);
+  let use=bld, pos=null;
+  /* Thin shapes cannot stack deep, so a tower build may fall short of the
+     target. If it does, fall back to the flat build, which spreads instead. */
+  for(const b of [bld,BUILDS[0]]){
+    use=b;
+    const maxL=Math.min(b.lay,2+Math.floor(lv/4));
+    let W=7,H=7;
+    for(let k=0;k<18;k++){
+      pos=stack(mask,W,H,maxL,ter&&ter.f,b.keep,b.nb);
+      if(pos.length<target*.85){ H++; if(H>W*1.45) W++; }
+      else if(pos.length>target*1.15){ if(H>6)H--; else if(W>5)W--; else break; }
+      else break;
+      if(W>b.maxW)W=b.maxW; if(H>b.maxH)H=b.maxH;
+    }
+    if(pos.length>=target*.8) break;
   }
+  const bld2=use;
   pos.sort((a,b)=>b.l-a.l||b.y-a.y||b.x-a.x);
   while(pos.length%2) pos.shift();
   pos.sort((a,b)=>a.l-b.l||a.y-b.y||a.x-b.x);
-  return {pos,name:sh.n+(ter?' · '+ter.n:''),rnd};
+  /* one modifier in the name at most, so the header stays readable */
+  return {pos,name:sh.n+(bld2.n?' · '+bld2.n:(ter?' · '+ter.n:'')),rnd};
 }
 function relations(P){
   const up=[],lf=[],rt=[];
@@ -1344,29 +1397,43 @@ addEventListener('popstate',()=>{ backArmed=false; if(backStep()) armBack(); });
    drag are not a luxury here. */
 const MAXZ=3.4;
 let vBase={tx:0,ty:0,s:1,W:1,H:1}, vNow={tx:0,ty:0,s:1};
+/* Stage metrics are cached. Reading clientWidth or getBoundingClientRect inside
+   a pointermove handler forces a synchronous layout on every single event, which
+   is what made pinching stutter on a board of 200 tiles. */
+let SW=1,SH=1,SL=0,ST=0;
+function measureStage(){
+  const r=stage.getBoundingClientRect();
+  SW=r.width||1; SH=r.height||1; SL=r.left; ST=r.top;
+}
 function fit(keepZoom){
   if(!tiles.length) return;
+  measureStage();
   let mx=0,my=0,ml=0;
   for(const t of tiles){ mx=Math.max(mx,t.x); my=Math.max(my,t.y); ml=Math.max(ml,t.l); }
   const W=(mx+1)*40+ml*6+8, H=(my+1)*52+ml*7+8;
-  const s=Math.min(stage.clientWidth/W, stage.clientHeight/H, 1.6);
-  vBase={ W, H, s,
-    tx:(stage.clientWidth-W*s)/2,
-    ty:(stage.clientHeight-H*s)/2+ml*7*s };
+  const s=Math.min(SW/W, SH/H, 1.6);
+  vBase={ W, H, s, tx:(SW-W*s)/2, ty:(SH-H*s)/2+ml*7*s };
   if(!keepZoom) vNow={tx:vBase.tx,ty:vBase.ty,s:vBase.s};
-  clampView(); applyView();
+  clampView(); applyView(true);
 }
 function clampView(){
   vNow.s=Math.max(vBase.s, Math.min(vBase.s*MAXZ, vNow.s));
   const w=vBase.W*vNow.s, h=vBase.H*vNow.s;
-  const SW=stage.clientWidth, SH=stage.clientHeight;
   /* at least 60% of the smaller dimension has to stay on screen */
   const mx=Math.min(SW,w)*.6, my=Math.min(SH,h)*.6;
   vNow.tx=Math.max(mx-w, Math.min(SW-mx, vNow.tx));
   vNow.ty=Math.max(my-h, Math.min(SH-my, vNow.ty));
 }
-function applyView(){
-  board.style.transform=`translate(${vNow.tx}px, ${vNow.ty}px) scale(${vNow.s})`;
+/* One transform write per frame, no matter how many pointer events arrive.
+   translate3d keeps the board on its own compositor layer. */
+let viewRaf=0;
+function writeView(){
+  viewRaf=0;
+  board.style.transform='translate3d('+vNow.tx.toFixed(2)+'px,'+vNow.ty.toFixed(2)+'px,0) scale('+vNow.s.toFixed(4)+')';
+}
+function applyView(now){
+  if(now){ if(viewRaf) cancelAnimationFrame(viewRaf); writeView(); return; }
+  if(!viewRaf) viewRaf=requestAnimationFrame(writeView);
 }
 function zoomAt(s2,ax,ay){
   s2=Math.max(vBase.s, Math.min(vBase.s*MAXZ, s2));
@@ -1380,13 +1447,22 @@ addEventListener('orientationchange',()=>setTimeout(()=>fit(),250));
 
 /* --- érintés: egy ujj pásztáz (nagyítva), két ujj csippent --- */
 const ptrs=new Map();
-let pinch=null, dragged=0, lastTap=0, lastTapX=0, lastTapY=0;
+let pinch=null, dragged=0, lastTap=0, lastTapX=0, lastTapY=0, gestTimer=0;
+function gesture(on){
+  clearTimeout(gestTimer);
+  if(on) board.classList.add('gesture');
+  /* keep the compositor layer a moment longer so a second pinch starts warm */
+  else gestTimer=setTimeout(()=>board.classList.remove('gesture'),400);
+}
 stage.addEventListener('pointerdown',e=>{
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   dragged=0;
+  if(ptrs.size===1) measureStage();      /* once per gesture, never during it */
   if(ptrs.size===2){
-    const [a,b]=[...ptrs.values()];
+    let a=null,b=null;
+    for(const v of ptrs.values()){ if(!a) a=v; else { b=v; break; } }
     pinch={d:Math.hypot(a.x-b.x,a.y-b.y), s:vNow.s};
+    gesture(true);
   }
 });
 stage.addEventListener('pointermove',e=>{
@@ -1395,18 +1471,22 @@ stage.addEventListener('pointermove',e=>{
   p.x=e.clientX; p.y=e.clientY;
   if(ptrs.size===1){
     dragged+=Math.abs(dx)+Math.abs(dy);
-    if(vNow.s>vBase.s+1e-4){ vNow.tx+=dx; vNow.ty+=dy; clampView(); applyView(); }
+    if(vNow.s>vBase.s+1e-4){
+      if(dragged>10) gesture(true);
+      vNow.tx+=dx; vNow.ty+=dy; clampView(); applyView();
+    }
   }else if(ptrs.size===2&&pinch&&pinch.d>8){
     dragged+=30;                       /* a pinch is never a tap */
-    const [a,b]=[...ptrs.values()];
-    const r=stage.getBoundingClientRect();
+    let a=null,b=null;
+    for(const v of ptrs.values()){ if(!a) a=v; else { b=v; break; } }
     zoomAt(pinch.s*(Math.hypot(a.x-b.x,a.y-b.y)/pinch.d),
-           (a.x+b.x)/2-r.left, (a.y+b.y)/2-r.top);
+           (a.x+b.x)/2-SL, (a.y+b.y)/2-ST);
   }
-});
+},{passive:true});
 const ptrUp=e=>{
   ptrs.delete(e.pointerId);
   if(ptrs.size<2) pinch=null;
+  if(!ptrs.size) gesture(false);
   if(dragged<=10&&vNow.s>vBase.s+1e-4){
     /* double tap in the same spot while zoomed in = back to fit */
     const now=Date.now();
