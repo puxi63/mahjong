@@ -82,8 +82,10 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 @keyframes pop{0%,100%{transform:scale(1)}35%{transform:scale(1.2)}}
 /* haladássáv */
 .track{position:relative;height:2px;margin:9px 0 0;background:var(--hair-soft);border-radius:2px;overflow:hidden}
-.track i{position:absolute;inset:0 auto 0 0;width:0%;background:linear-gradient(90deg,rgba(227,177,85,.35),var(--candle));
-  border-radius:2px;transition:width .4s cubic-bezier(.3,1,.4,1);box-shadow:0 0 10px rgba(227,177,85,.5)}
+/* scaleX instead of width: a width transition recomputed the header layout every frame */
+.track i{position:absolute;inset:0;background:linear-gradient(90deg,rgba(227,177,85,.35),var(--candle));
+  border-radius:2px;transform:scaleX(0);transform-origin:0 50%;
+  transition:transform .4s cubic-bezier(.3,1,.4,1);box-shadow:0 0 10px rgba(227,177,85,.5)}
 
 /* ================= tábla ================= */
 /* touch-action:none so pinch-zoom and pan reach our pointer handlers
@@ -126,7 +128,9 @@ header{position:relative;z-index:3;padding:9px 13px 0}
              inset 0 1px 0 var(--t-gloss),inset 0 -3px 5px var(--t-inner);
   text-shadow:0 1px 0 var(--t-shadow);
   filter:brightness(calc(.90 + var(--dep)*.13));
-  transition:transform .14s cubic-bezier(.3,1.4,.5,1),filter .14s,opacity .24s,box-shadow .18s;
+  /* transform and opacity only: those run on the compositor. Animating filter and
+     box-shadow repainted every tile that became free, on every frame of a match. */
+  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s;
 }
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
 /* dimmed enough to read as "not yet playable", light enough to still see the symbol */
@@ -154,12 +158,13 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 .tile.hint{animation:hint .75s ease-in-out 3}
 @keyframes hint{0%,100%{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 6px 9px rgba(0,0,0,.55)}
   50%{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 6px 20px rgba(0,0,0,.5),0 0 0 2px #86ddbb,0 0 26px 5px rgba(134,221,187,.7)}}
-.tile.gone{transform:scale(.25) rotate(14deg);opacity:0;pointer-events:none}
+.tile.gone{transform:scale(.25) rotate(14deg);opacity:0;pointer-events:none;will-change:transform,opacity}
 .tile.shake{animation:shake .34s}
 @keyframes shake{0%,100%{transform:translateX(0)}22%{transform:translateX(-4px)}66%{transform:translateX(4px)}}
 /* eltűnő pár szikrája */
 .spark{position:absolute;width:40px;height:52px;pointer-events:none;z-index:8000;
   background:radial-gradient(circle at 50% 50%, rgba(255,242,208,.95), rgba(227,177,85,.45) 36%, transparent 66%);
+  will-change:transform,opacity;              /* own layer: scaling it must not repaint the tiles below */
   animation:spark .55s ease-out forwards}
 @keyframes spark{0%{opacity:.95;transform:scale(.5)}100%{opacity:0;transform:scale(2.2)}}
 /* an expanding ring on top of the flash — reads as a small released spell */
@@ -264,6 +269,85 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
   font-family:Cinzel,serif;font-size:12px;color:var(--ivory)}
 .switch .st{font-size:12px;color:var(--ivory-dim);font-family:"Crimson Pro",serif;font-style:italic}
 .switch.on{border-color:var(--hair);background:rgba(227,177,85,.08)}
+/* ================= gyerek mód ================= */
+/* The one thing a child needs to see: which tiles can be picked. Playable tiles
+   get full colour and a bright breathing halo; blocked ones go grey and dark. */
+body.kid .tile{font-size:31px}
+body.kid .tile:not(.blocked){filter:none;
+  box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 8px 14px rgba(0,0,0,.5),0 0 0 3px #ffd36b}
+body.kid .tile.blocked{filter:grayscale(.9) brightness(.45)}
+/* the halo breathes through opacity only, which the compositor handles cheaply */
+body.kid .tile:not(.blocked)::before{content:"";position:absolute;inset:-6px;border-radius:11px;pointer-events:none;
+  box-shadow:0 0 16px 5px rgba(255,205,100,.75);animation:breathe 1.7s ease-in-out infinite;will-change:opacity}
+@keyframes breathe{50%{opacity:.2}}
+body.kid .tile.gone::before{display:none}
+/* every playable tile has a gold rim here, so the chosen one needs a white one */
+body.kid .tile.sel{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 12px 20px rgba(0,0,0,.6),
+  0 0 0 4px #fff,0 0 26px 8px rgba(255,225,130,.9)}
+body.kid .clock{display:none}                /* no clock for the little ones */
+body.kid .hstars{font-size:17px}
+
+/* ================= főmenü — teljes képernyő ================= */
+/* The home screen owns the whole display instead of floating as a card:
+   emblem and stats on top, the play block in the middle, shortcuts below. */
+.veil.home{padding:0;backdrop-filter:none;
+  background:
+    radial-gradient(ellipse 85% 42% at 50% 0%, rgba(227,177,85,.20), transparent 70%),
+    radial-gradient(ellipse 120% 70% at 50% -10%, var(--bg1) 0%, transparent 65%),
+    radial-gradient(ellipse 100% 60% at 50% 112%, var(--bg2) 0%, transparent 70%),
+    var(--bg0)}
+.veil.home.on{display:block}
+.homewrap{width:min(480px,100%);min-height:100%;margin:0 auto;display:flex;flex-direction:column;gap:18px;
+  padding:calc(24px + env(safe-area-inset-top)) 18px calc(12px + env(safe-area-inset-bottom));
+  animation:rise .35s cubic-bezier(.2,1,.3,1)}
+.hhead{flex:1 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.flame{font-size:56px;line-height:1;filter:drop-shadow(0 0 18px rgba(227,177,85,.75));
+  animation:flicker 3.4s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes flicker{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.05) rotate(-2deg)}62%{transform:scale(.97) rotate(1.5deg)}}
+.htitle{margin:14px 0 6px;font-family:Cinzel,serif;font-weight:600;font-size:31px;line-height:1.05;
+  letter-spacing:.06em;color:var(--candle);text-shadow:0 2px 20px rgba(227,177,85,.35)}
+.htitle span{display:block;margin-top:7px;padding-left:.45em;font-size:16px;letter-spacing:.45em;color:var(--ivory)}
+#startSub{margin:0 0 18px;font-size:15px;font-style:italic;color:var(--ivory-dim)}
+.hstats{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.hstats div{border:1px solid var(--hair-soft);border-radius:11px;padding:9px 2px 7px;background:rgba(236,226,202,.04)}
+.hstats b{display:block;font-family:Cinzel,serif;font-size:18px;line-height:1.2;color:var(--ivory);font-variant-numeric:tabular-nums}
+.hstats span{font-size:11px;color:var(--ivory-dim)}
+.hplay{display:flex;flex-direction:column}
+.hplay .tabs{margin-bottom:12px}
+.home #modeNote{margin:-4px 0 12px;text-align:center}
+.act.big{margin-top:0;padding:17px;font-size:15px}
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 13px 12px;text-align:left;
+  font:inherit;color:var(--ivory);cursor:pointer;border-radius:13px;border:1px solid var(--hair);
+  background:linear-gradient(170deg,rgba(236,226,202,.08),rgba(236,226,202,.025));transition:transform .1s,background .15s}
+.tbtn:active{transform:scale(.97);background:rgba(227,177,85,.14)}
+.tbtn i{margin-bottom:5px;font-style:normal;font-size:25px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+.tbtn b{font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:.03em}
+.tbtn span{font-size:12.5px;line-height:1.3;color:var(--ivory-dim)}
+.tbtn span.hot{color:var(--candle)}
+.linkbtn{padding:8px 12px;background:none;border:0;cursor:pointer;
+  font-family:Cinzel,serif;font-size:11.5px;letter-spacing:.06em;color:rgba(236,226,202,.36)}
+.linkbtn.hot{color:var(--candle)}
+.hlinks{display:flex;justify-content:center;align-items:center;color:rgba(236,226,202,.22)}
+/* Short phones (640-720px tall): the same menu, tighter, so it still needs no scrolling.
+   Measured: 691px of content on a 640px screen before this. */
+@media (max-height:760px){
+  /* 9px gaps leave room even before the web font arrives: the fallback serif runs taller */
+  .homewrap{gap:9px;padding-top:calc(14px + env(safe-area-inset-top))}
+  .flame{font-size:40px}
+  .htitle{margin:8px 0 4px;font-size:25px}
+  .htitle span{margin-top:5px;font-size:13px}
+  #startSub{margin-bottom:11px;font-size:14px}
+  .hstats div{padding:6px 2px 5px}
+  .hstats b{font-size:16px}
+  .hplay .tabs{margin-bottom:8px}
+  .home #modeNote{margin-bottom:8px}
+  .act.big{padding:13px}
+  .tbtn{padding:10px 12px 9px}
+  .tbtn i{font-size:21px;margin-bottom:3px}
+  .linkbtn{padding:5px 10px}
+}
+
 /* ================= pályaválasztó ================= */
 .lvtop{margin:0 0 14px}
 .chap{margin:0 0 9px;border:1px solid var(--hair-soft);border-radius:12px;background:rgba(236,226,202,.025)}
@@ -329,7 +413,6 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 .achname{font-size:12px;color:var(--ivory-dim);margin:10px 0 0;min-height:32px;line-height:1.45}
 .achname b{color:var(--ivory);font-weight:600}
 #modeNote{margin:-9px 0 13px;font-size:12.5px}
-#dChip{margin-left:7px;color:var(--candle);font-family:Cinzel,serif}
 #saveTxt{
   width:100%;height:76px;margin-top:8px;resize:none;
   font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.45;
@@ -375,33 +458,56 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 
 <div class="toast" id="toast"></div>
 
-<div class="veil on" id="veilStart">
+<div class="veil on home" id="veilStart">
+  <div class="homewrap">
+    <div class="hhead">
+      <div class="flame" aria-hidden="true">🕯️</div>
+      <h1 class="htitle">Gyertyafény<span>Mahjong</span></h1>
+      <p id="startSub">Végtelen szintek egy elcsendesedett kastélyban.</p>
+      <div class="hstats">
+        <div><b id="hsLevel">1</b><span>szint</span></div>
+        <div><b id="hsStars">0</b><span>csillag</span></div>
+        <div><b id="hsStreak">0</b><span>napos sor</span></div>
+        <div><b id="hsCoins">0</b><span>tallér</span></div>
+      </div>
+    </div>
+    <div class="hplay">
+      <div class="tabs" id="modeRow">
+        <button data-mode="adv" class="on">Kaland</button>
+        <button data-mode="mem">Memória</button>
+        <button data-mode="zen">Zen</button>
+        <button data-mode="kid">Gyerek</button>
+      </div>
+      <p class="sub" id="modeNote">Ezer szint, csillagokkal és tallérral.</p>
+      <button class="act big" id="bGo"><span>🪄</span><span id="goText">Kezdjük</span></button>
+    </div>
+    <div class="hgrid">
+      <button class="tbtn" id="bLevels"><i>🗺️</i><b>Pályák</b><span id="lvChip">minden szint egy helyen</span></button>
+      <button class="tbtn" id="bDaily"><i>🗓️</i><b>Napi kihívás</b><span id="dChip">ma még nincs kész</span></button>
+      <button class="tbtn" id="bStats"><i>📖</i><b>Napló</b><span id="achChip">statisztika, kitűzők</span></button>
+      <button class="tbtn" id="bHomeShop"><i>🧰</i><b>Tár</b><span id="shopChip">témák, csempék</span></button>
+    </div>
+    <div class="hlinks">
+      <button class="linkbtn" id="bHelp">Szabályok</button><span>·</span>
+      <button class="linkbtn" id="bReset">Haladás törlése</button>
+    </div>
+  </div>
+</div>
+
+<!-- the rules live in their own panel, so the home screen fits a phone without scrolling -->
+<div class="veil" id="veilHelp">
   <div class="panel">
-    <div class="seal">🕯️</div>
-    <h2>Gyertyafény Mahjong</h2>
-    <p id="startSub">Végtelen szintek egy elcsendesedett kastélyban.</p>
-    <ul class="lore" id="startLore">
+    <div class="seal">📜</div>
+    <h2>Szabályok</h2>
+    <ul class="lore">
       <li>Két <b>egyforma</b> csempe tűnik el együtt. Csak <b>szabad</b> csempét vehetsz fel: nincs rajta semmi, és a bal vagy jobb oldala üres.</li>
-      <li>Minden szint <b>kirakható</b>, és mindig ugyanolyan marad.</li>
-      <li>A kirakásért <b>tallér</b> jár — gyorsan és segítség nélkül többet ér.</li>
-      <li>A <b>Tárban</b> csempestílust, ikonkészletet és hátteret nyitsz.</li>
+      <li>Ha egy csempe a saját <b>ikertestvérén</b> fekszik, koppints a felsőre kétszer, és együtt eltűnnek.</li>
+      <li>Minden szint <b>kirakható</b>. Gyorsan és segítség nélkül <b>3 ★</b> jár — a fejlécben játék közben is látod.</li>
+      <li>Elakadtál? <b>Keverés</b>, és ha az is elfogy, tallérért <b>mentőöv</b>.</li>
+      <li>A <b>Tárban</b> témákat, csempestílust és hátteret nyitsz.</li>
     </ul>
     <div class="rule"></div>
-    <div class="tabs" id="modeRow">
-      <button data-mode="adv" class="on">Kaland</button>
-      <button data-mode="mem">Memória</button>
-      <button data-mode="zen">Zen</button>
-    </div>
-    <p class="sub" id="modeNote">Ezer szint, csillagokkal és tallérral.</p>
-    <button class="act" id="bGo"><span>🪄</span><span id="goText">Kezdjük</span></button>
-    <div class="pair">
-      <button class="act quiet" id="bLevels">🗺️ Pályák</button>
-      <button class="act quiet" id="bDaily">🗓️ Napi<span id="dChip"></span></button>
-    </div>
-    <div class="pair">
-      <button class="act quiet" id="bStats">Napló</button>
-      <button class="act quiet" id="bReset">Haladás törlése</button>
-    </div>
+    <button class="act" id="bHelpClose">Értem</button>
   </div>
 </div>
 
@@ -506,7 +612,7 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
         <button class="act quiet" id="bSaveLoad">Visszatöltés</button>
       </div>
     </div>
-    <button class="act" id="bCloseShop">Vissza a játékhoz</button>
+    <button class="act" id="bCloseShop">Vissza</button>
   </div>
 </div>
 
@@ -666,9 +772,10 @@ const MODES={
   adv:  {n:'Kaland',       note:'Ezer szint, csillagokkal és tallérral.'},
   mem:  {n:'Memória',      note:'A csempék rejtve állnak — fordítsd fel, és jegyezd meg.'},
   zen:  {n:'Zen',          note:'Nincs óra és nincs elakadás. A tipp és a keverés korlátlan.'},
+  kid:  {n:'Gyerek',       note:'Kevés, nagy kép, és mindig látszik, mit lehet felvenni.'},
   daily:{n:'Napi kihívás', note:''}
 };
-const LVKEY={adv:'gm_level',mem:'gm_mem_level',zen:'gm_zen_level'};
+const LVKEY={adv:'gm_level',mem:'gm_mem_level',zen:'gm_zen_level',kid:'gm_kid_level'};
 const lvOf=m=>Math.max(1,parseInt(load(LVKEY[m]||'gm_level','1'),10)||1);
 let mode=LVKEY[load('gm_mode','adv')]?load('gm_mode','adv'):'adv';
 let level=lvOf(mode);
@@ -880,6 +987,45 @@ function buildLevel(seed,plain,diff){
   /* one modifier in the name at most, so the header stays readable */
   return {pos,name:sh.n+(bld2.n?' · '+bld2.n:(ter?' · '+ter.n:'')),rnd};
 }
+
+/* ---- Gyerek mód ----
+   Small boards, few and familiar pictures, and at most three shallow layers
+   that step in clearly, so a child can see at a glance what is on top. Only
+   the plain, chunky shapes — no rings or lattices to decode. */
+const KID_SHAPES=['Holdkorong','Szív','Rombusz','Gúla','Teknős','Kereszt','Pajzs','Csillag','Homokóra','Kapu']
+  .map(n=>SHAPES.find(s=>s.n===n)).filter(Boolean);
+const KID_SYMBOLS=['🐶','🐱','🐰','🐻','🐼','🦁','🐸','🐵','🐷','🐮','🐔','🦄',
+                   '🐙','🐢','🍎','🍌','🍓','🍉','🌈','⭐','🚗','🎈'];
+function buildKid(lv){
+  const rnd=mulberry32((lv*2246822519)^0x2F6B1D);
+  const sh=KID_SHAPES[Math.floor(rnd()*KID_SHAPES.length)];
+  const fx=rnd()<.5;
+  const mask=(u,v)=>sh.f(fx?1-u:u,v);
+  const target=Math.min(52,16+lv*2);
+  const maxL=Math.min(3,1+Math.floor((lv+1)/3));   /* the first level is flat */
+  let W=4,H=4,pos=null;
+  for(let k=0;k<16;k++){
+    /* keep only half of each layer: a small, centred step you cannot miss */
+    pos=stack(mask,W,H,maxL,null,.5,3);
+    if(pos.length<target*.85){ H++; if(H>W*1.3) W++; }
+    else if(pos.length>target*1.15){ if(H>3)H--; else if(W>3)W--; else break; }
+    else break;
+    if(W>7)W=7; if(H>8)H=8;
+  }
+  pos.sort((a,b)=>b.l-a.l||b.y-a.y||b.x-a.x);
+  while(pos.length%2) pos.shift();
+  pos.sort((a,b)=>a.l-b.l||a.y-b.y||a.x-b.x);
+  return {pos,name:sh.n,rnd};
+}
+/* few kinds of picture: four on the first levels, never more than ten */
+const kidCount=lv=>Math.min(10,4+Math.floor(lv/4));
+function kidPool(lv,sc){
+  return shf(mulberry32((lv*40503)^0x7A11E),KID_SYMBOLS.slice()).slice(0,sc);
+}
+/* layer offset in board pixels: children get a bigger step, so lower layers show */
+let LX=6, LY=7;
+/* Zen and Gyerek share the forgiving rules: unlimited help, no failing */
+const easyMode=()=>mode==='zen'||mode==='kid';
 function relations(P){
   const up=[],lf=[],rt=[],dn=[];
   for(let i=0;i<P.length;i++){up[i]=[];lf[i]=[];rt[i]=[];dn[i]=-1;}
@@ -961,14 +1107,17 @@ function startLevel(n,depth){
   const daily=mode==='daily';
   const seed=daily?daySeed(dailyDay):level;
   const diff=daily?dayDiff(dailyDay):level;
+  const kid=mode==='kid';
+  LX=kid?9:6; LY=kid?11:7;
+  document.body.classList.toggle('kid',kid);
   /* If a layout resists a solvable deal, retry without the terrace instead of
      recursing on the same seed — that used to loop forever. */
-  let b=buildLevel(seed,false,diff), syms=null;
+  let b=kid?buildKid(level):buildLevel(seed,false,diff), syms=null;
   for(const plain of [false,true]){
-    if(plain) b=buildLevel(seed,true,diff);
+    if(plain) b=kid?buildKid(level):buildLevel(seed,true,diff);
     P=b.pos; R=relations(P); total=P.length;
-    const sc=Math.min(SYMBOLS.length,8+Math.floor(diff/2));
-    syms=dealSolvable(P,R,sc,b.rnd,levelPool(seed,sc));
+    const sc=kid?kidCount(level):Math.min(SYMBOLS.length,8+Math.floor(diff/2));
+    syms=dealSolvable(P,R,sc,b.rnd,kid?kidPool(level,sc):levelPool(seed,sc));
     if(syms) break;
   }
   if(!syms){
@@ -979,8 +1128,8 @@ function startLevel(n,depth){
   memLock=false;
   tiles=P.map((p,i)=>({...p,s:syms[i],i,el:null}));
   present=new Array(total).fill(true);
-  sel=null; usedAid=0; rescues=0; lastBanked=0;
-  const zen=mode==='zen';
+  sel=null; usedAid=0; rescues=0; lastBanked=0; levelDone=false;
+  const zen=easyMode();
   hints=zen?99:3+upg.tipp; shuffles=zen?99:2+upg.kever;
   par=Math.round(total*1.5*parMult());
   $('uiLvl').textContent=daily?'⚑':level;
@@ -997,8 +1146,8 @@ function render(){
   for(const t of order){
     const d=document.createElement('div');
     d.className='tile';
-    d.style.left=(t.x*40+t.l*6)+'px';
-    d.style.top =(t.y*52-t.l*7)+'px';
+    d.style.left=(t.x*40+t.l*LX)+'px';
+    d.style.top =(t.y*52-t.l*LY)+'px';
     d.style.setProperty('--dep',(t.l/top).toFixed(3));
     d.style.zIndex=t.l*1000+t.y*20+t.x;
     if(mode==='mem') d.classList.add('down');
@@ -1014,7 +1163,7 @@ function refresh(){
   for(const t of tiles){ if(!present[t.i]) continue; n++;
     t.el.classList.toggle('blocked',!freeIdx(t.i,present,R)); }
   $('uiSub').textContent = n+' csempe hátravan · '+total+'-ból';
-  $('uiTrack').style.width=(100*(total-n)/total)+'%';
+  $('uiTrack').style.transform='scaleX('+((total-n)/total).toFixed(4)+')';
 }
 function jolt(t){ t.el.classList.add('shake'); setTimeout(()=>t.el.classList.remove('shake'),340); }
 function sparkle(t){
@@ -1059,7 +1208,13 @@ function takePair(a,b){
   sparkle(a); sparkle(b);
   a.el.classList.add('gone'); b.el.classList.add('gone');
   beep('ok');
-  setTimeout(()=>{ refresh(); check(); },170);
+  /* Light up the freed tiles at once — the old 170ms wait read as lag. Only the
+     end-of-level check waits, so the last pair still gets to vanish on screen. */
+  refresh();
+  setTimeout(check,200);
+  /* once the vanish animation is over, drop the tiles from painting altogether;
+     nothing brings a removed tile back (no undo, reshuffles touch only live ones) */
+  setTimeout(()=>{ a.el.style.display='none'; b.el.style.display='none'; },300);
 }
 /* the identical tile lying directly under t, if taking t would free it */
 function twinOf(t){
@@ -1100,7 +1255,7 @@ function check(){
     return;
   }
   /* Zen never fails: it just reshuffles the board for you */
-  if(mode==='zen'){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); else finish(false); return; }
+  if(easyMode()){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); else finish(false); return; }
   /* no shuffle left, or none that could help: end it instead of freezing the board */
   if(shuffles<=0||!doShuffle(true,true)){ finish(false); return; }
   /* Out of moves but shuffles left: say so instead of leaving a dead board. */
@@ -1120,7 +1275,7 @@ $('bHint').onclick=()=>{
   if(hints<=0) return;
   const m=findMove(); if(!m){ beep('no'); return; }
   hints--; usedAid++; updateStars();
-  $('hintN').textContent=mode==='zen'?'∞':hints; $('bHint').disabled=mode!=='zen'&&hints<=0;
+  $('hintN').textContent=easyMode()?'∞':hints; $('bHint').disabled=!easyMode()&&hints<=0;
   if(isTwinMove(m)) twinTip(true);
   m.forEach(t=>{
     t.el.classList.add('hint');
@@ -1155,8 +1310,8 @@ function doShuffle(free,dry){
   if(dry) return true;
   if(!free){
     shuffles--; usedAid++; updateStars();
-    $('shufN').textContent=mode==='zen'?'∞':shuffles;
-    $('bShuf').disabled=mode!=='zen'&&shuffles<=0;
+    $('shufN').textContent=easyMode()?'∞':shuffles;
+    $('bShuf').disabled=!easyMode()&&shuffles<=0;
   }
   rem.forEach(t=>{
     t.s=out[t.i]; t.el.textContent=t.s;
@@ -1183,7 +1338,10 @@ function tickClock(){ clearInterval(timer);
 /* ---------------- csillagok ----------------
    One formula for the live header and the end panel: 3 stars for no help inside
    the target time, 2 for at most one aid inside 1.6x of it, 1 otherwise. */
-function starsFor(secs){ return usedAid===0&&secs<=par?3:(usedAid<=1&&secs<=par*1.6?2:1); }
+function starsFor(secs){
+  if(mode==='kid') return 3;                /* children always earn all three */
+  return usedAid===0&&secs<=par?3:(usedAid<=1&&secs<=par*1.6?2:1);
+}
 function updateStars(){
   const secs=running?((Date.now()-t0)/1000|0):0, st=starsFor(secs);
   const left = st===3 ? par-secs : (st===2 ? par*1.6-secs : Infinity);
@@ -1202,7 +1360,13 @@ function keepStars(m,key,st){
 }
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
+/* A level ends once. Every match schedules a delayed check(), so clearing the last
+   pairs in quick succession used to run finish() two or three times — and pay out
+   the reward each time. */
+let levelDone=false;
 function finish(won){
+  if(levelDone) return;
+  levelDone=true;
   clearInterval(timer);
   const secs=running?((Date.now()-t0)/1000|0):0;
   const daily=mode==='daily';
@@ -1218,6 +1382,8 @@ function finish(won){
     const first=parseInt(load(bestKey,'0'),10)?0:20;
     let gain=Math.round((12+Math.floor(total/6)+st*12+(secs<=par?15:0)+first)*coinMult());
     if(replay) gain=Math.round(gain*.3)+Math.max(0,st-prevStars)*15;
+    /* tiny boards and guaranteed stars: pay less, or it becomes the grown-ups' coin farm */
+    if(mode==='kid') gain=Math.round(gain*.4);
     let chest=0;
     if(mode==='adv'&&!replay){
       if(level%100===0) chest=500+level*4;
@@ -1225,9 +1391,11 @@ function finish(won){
     }
     gain+=chest;
     /* stats first, so the achievement check below sees this win */
-    if(!replay) stAdd('solved',1);
-    stAdd('stars',Math.max(0,st-prevStars));
-    if(st===3&&prevStars<3) stAdd('perfect',1);
+    /* kid wins stay out of the grown-up stats, so badges cannot be farmed there */
+    const counts=mode!=='kid';
+    if(!replay&&counts) stAdd('solved',1);
+    if(counts) stAdd('stars',Math.max(0,st-prevStars));
+    if(counts&&st===3&&prevStars<3) stAdd('perfect',1);
     if(mode==='mem'&&!replay) stAdd('mem',1);
     if(mode==='zen'&&!replay) stAdd('zen',1);
     const newStars=keepStars(mode,starKey,st);
@@ -1249,7 +1417,10 @@ function finish(won){
         ? dailyDay+' teljesítve. Sorozat: '+streak+' nap.'
         : 'A mai pályát már teljesítetted — a sorozat nem nőtt.';
     }else{
-      $('endText').textContent=level+'. szint kész ('+MODES[mode].n+'). Céridő: '+fmt(par)+'.';
+      $('endText').textContent = mode==='kid'
+        ? 'Minden képet megtaláltál. Jöhet a következő?'
+        : level+'. szint kész ('+MODES[mode].n+'). Céridő: '+fmt(par)+'.';
+      if(mode==='kid') $('endTitle').textContent='Ügyes vagy!';
       if(chest) $('endText').textContent+='  Mérföldkő-láda: +'+chest+' tallér.';
     }
     $('endCoins').textContent='';
@@ -1383,7 +1554,11 @@ function equip(key){
 }
 const openShop=()=>{ drawShop(); $('veilShop').classList.add('on'); armBack(); beep('tap'); };
 $('bShop').onclick=openShop; $('bShop2').onclick=openShop; $('uiPurse').onclick=openShop;
-$('bCloseShop').onclick=()=>{ $('veilShop').classList.remove('on'); beep('tap'); };
+$('bCloseShop').onclick=()=>{
+  $('veilShop').classList.remove('on');
+  if($('veilStart').classList.contains('on')) refreshStart();   /* coins and collection changed */
+  beep('tap');
+};
 
 /* ---------------- megerősítés ----------------
    One reusable yes/no panel for everything that throws away progress. */
@@ -1415,19 +1590,21 @@ const CHAP=25;
 const playMode=()=>LVKEY[mode]?mode:(LVKEY[load('gm_mode','adv')]?load('gm_mode','adv'):'adv');
 function totalStars(m){ let n=0; const o=starMap(m); for(const k in o) n+=o[k]; return n; }
 function drawPreview(cv,lv){
-  const b=buildLevel(lv);
+  const kid=cv.dataset.m==='kid';
+  const b=kid?buildKid(lv):buildLevel(lv);
+  const lx=kid?9:6, ly=kid?11:7;
   let mx=0,my=0,ml=0;
   for(const t of b.pos){ mx=Math.max(mx,t.x); my=Math.max(my,t.y); ml=Math.max(ml,t.l); }
-  const W=(mx+1)*40+ml*6+8, H=(my+1)*52+ml*7+8;
+  const W=(mx+1)*40+ml*lx+8, H=(my+1)*52+ml*ly+8;
   const dpr=Math.min(2,window.devicePixelRatio||1), size=cv.clientWidth||90;
   cv.width=Math.round(size*dpr); cv.height=Math.round(size*dpr);
   const c=cv.getContext('2d');
   const s=Math.min(cv.width/W, cv.height/H)*.94;
-  const ox=(cv.width-W*s)/2, oy=(cv.height-H*s)/2+ml*7*s;
+  const ox=(cv.width-W*s)/2, oy=(cv.height-H*s)/2+ml*ly*s;
   const top=Math.max(1,ml);
   c.lineWidth=Math.max(.7,s*1.6); c.strokeStyle='rgba(24,17,8,.6)';
   for(const t of [...b.pos].sort((p,q)=>p.l-q.l||p.y-q.y||p.x-q.x)){
-    const x=ox+(t.x*40+t.l*6)*s, y=oy+(t.y*52-t.l*7)*s, w=38*s, h=50*s;
+    const x=ox+(t.x*40+t.l*lx)*s, y=oy+(t.y*52-t.l*ly)*s, w=38*s, h=50*s;
     /* higher layers are lighter, like candlelight catching the top of the stack */
     c.fillStyle=mix('#5d4f36','#f5ecd7',.35+.65*(t.l/top));
     c.beginPath();
@@ -1455,7 +1632,7 @@ function fillChap(box,a,z,un,stars,m){
       : cur ? '<em>▶ most</em>'
       : st ? '<b>'+'★'.repeat(st)+'</b>'+'★'.repeat(3-st)
       : '<span class="ok">✓</span>';           /* finished before stars were kept */
-    d.innerHTML='<canvas data-lv="'+l+'"></canvas><div class="ln">'+l+'</div><div class="ls">'+mark+'</div>';
+    d.innerHTML='<canvas data-lv="'+l+'" data-m="'+m+'"></canvas><div class="ln">'+l+'</div><div class="ls">'+mark+'</div>';
     if(!locked) d.onclick=()=>playFromMap(m,l);
     cells.appendChild(d);
     obs.observe(d.firstChild);
@@ -1514,10 +1691,22 @@ function refreshStart(){
   setMode(LVKEY[mode]?mode:load('gm_mode','adv'));
   const adv=lvOf('adv');
   if(adv>1) $('startSub').textContent=rankOf(adv)+' · ott folytatod, ahol abbahagytad.';
-  $('startLore').style.display=adv>1?'none':'';
-  const s=curStreak();
-  $('dChip').textContent=dailyDone()?' ✓':(s?' · '+s+' nap':'');
+  $('bHelp').classList.toggle('hot',adv<=1);   /* newcomers: point them at the rules */
+  const s=curStreak(), done=dailyDone(), un=lvOf(mode);
+  /* the stat row and the tile captions show live numbers, not static labels */
+  $('hsLevel').textContent=un;
+  $('hsStars').textContent=totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily');
+  $('hsStreak').textContent=s;
+  $('hsCoins').textContent=coins;
+  $('lvChip').textContent=un>1?(un-1)+' szint kész · '+MODES[mode].n:'minden szint egy helyen';
+  $('dChip').textContent=done?('ma kész ✓'+(s>1?' · '+s+' nap':'')):(s?'tartsd meg a '+s+' napot':'ma még nincs kész');
+  $('dChip').classList.toggle('hot',!done);
+  $('achChip').textContent=achGot().length+' / '+ACH.length+' kitűző';
+  $('shopChip').textContent=owned.length+' / '+totalItems()+' gyűjtemény';
 }
+$('bHomeShop').onclick=()=>openShop();
+$('bHelp').onclick=()=>{ $('veilHelp').classList.add('on'); armBack(); beep('tap'); };
+$('bHelpClose').onclick=()=>{ $('veilHelp').classList.remove('on'); beep('tap'); };
 $('modeRow').onclick=e=>{
   const b=e.target.closest('button'); if(!b) return;
   setMode(b.dataset.mode); beep('tap');
@@ -1598,6 +1787,7 @@ $('bRescue').onclick=()=>{
   if(!doShuffle(true)){ toast('Ezt a táblát már nem lehet megkeverni'); beep('no'); return; }
   setCoins(coins-cost,true);
   rescues++; usedAid++; updateStars();
+  levelDone=false;                           /* the level goes on after all */
   stAdd('time',-lastBanked); lastBanked=0;   /* not a finished level after all */
   if(running) tickClock();                   /* the clock keeps running from t0 */
   $('veilEnd').classList.remove('on');
@@ -1614,7 +1804,8 @@ function wipeAll(){
   save('gm_skin','sk0'); save('gm_pack','pk0'); save('gm_bg','bg0');
   for(let k=1;k<=1000;k++) save('gm_best_'+k,'');
   save('gm_ach','[]'); save('gm_daily_days','[]');
-  for(const m of ['adv','mem','zen','daily']) save('gm_stars_'+m,'{}');
+  for(const m of ['adv','mem','zen','daily','kid']) save('gm_stars_'+m,'{}');
+  save('gm_kid_level','1');
   save('gm_twintip','0');
   save('gm_daily_last',''); save('gm_daily_streak','0'); save('gm_daily_best','0');
   for(const k of ['solved','time','stars','perfect','best','mem','zen']) save('gm_st_'+k,'0');
@@ -1639,9 +1830,11 @@ function backStep(){
   if($('veilAsk').classList.contains('on')){
     askFn=null; $('veilAsk').classList.remove('on'); beep('tap'); return true;
   }
-  for(const id of ['veilLevels','veilStats','veilDaily','veilShop']){
+  for(const id of ['veilHelp','veilLevels','veilStats','veilDaily','veilShop']){
     if($(id).classList.contains('on')){
-      $(id).classList.remove('on'); beep('tap'); return true;
+      $(id).classList.remove('on');
+      if($('veilStart').classList.contains('on')) refreshStart();
+      beep('tap'); return true;
     }
   }
   if($('veilEnd').classList.contains('on')){
@@ -1653,7 +1846,7 @@ function backStep(){
 /* Leaving a level abandons it — the same thing the system back button does. */
 function toMenu(){
   clearInterval(timer); timer=null; running=false;
-  for(const id of ['veilShop','veilDaily','veilStats','veilLevels','veilEnd','veilAsk']) $(id).classList.remove('on');
+  for(const id of ['veilShop','veilDaily','veilStats','veilLevels','veilHelp','veilEnd','veilAsk']) $(id).classList.remove('on');
   askFn=null;
   $('veilStart').classList.add('on'); refreshStart();
   beep('tap');
@@ -1679,9 +1872,12 @@ function fit(keepZoom){
   measureStage();
   let mx=0,my=0,ml=0;
   for(const t of tiles){ mx=Math.max(mx,t.x); my=Math.max(my,t.y); ml=Math.max(ml,t.l); }
-  const W=(mx+1)*40+ml*6+8, H=(my+1)*52+ml*7+8;
-  const s=Math.min(SW/W, SH/H, 1.6);
-  vBase={ W, H, s, tx:(SW-W*s)/2, ty:(SH-H*s)/2+ml*7*s };
+  const W=(mx+1)*40+ml*LX+8, H=(my+1)*52+ml*LY+8;
+  /* small kid boards may grow bigger on screen than regular ones */
+  const s=mode==='kid'
+    ? Math.min(SW/W, SH/H, 2.2)*.9   /* margin, or the glow of edge tiles gets clipped */
+    : Math.min(SW/W, SH/H, 1.6);
+  vBase={ W, H, s, tx:(SW-W*s)/2, ty:(SH-H*s)/2+ml*LY*s };
   if(!keepZoom) vNow={tx:vBase.tx,ty:vBase.ty,s:vBase.s};
   clampView(); applyView(true);
 }
@@ -1904,7 +2100,7 @@ const SAVE_KEYS=['gm_level','gm_mem_level','gm_zen_level','gm_mode',
   'gm_coins','gm_owned','gm_upg','gm_skin','gm_pack','gm_bg','gm_rank','gm_sfx','gm_music',
   'gm_ach','gm_daily_days','gm_daily_last','gm_daily_streak','gm_daily_best',
   'gm_st_solved','gm_st_time','gm_st_stars','gm_st_perfect','gm_st_best','gm_st_mem','gm_st_zen',
-  'gm_stars_adv','gm_stars_mem','gm_stars_zen','gm_stars_daily'];
+  'gm_stars_adv','gm_stars_mem','gm_stars_zen','gm_stars_daily','gm_kid_level','gm_stars_kid'];
 function exportSave(){
   const o={v:2,best:{}};
   for(const k of SAVE_KEYS){ const x=load(k,null); if(x!=null) o[k]=x; }
