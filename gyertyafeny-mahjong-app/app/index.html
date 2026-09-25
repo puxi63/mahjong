@@ -65,6 +65,13 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 .hinfo h1{margin:0;font-family:Cinzel,serif;font-size:15.5px;font-weight:600;letter-spacing:.04em;color:var(--ivory);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hinfo p{margin:1px 0 0;font-size:12.5px;font-style:italic;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .clock{font-family:Cinzel,serif;font-size:19px;font-variant-numeric:tabular-nums;color:var(--ivory);letter-spacing:.02em}
+/* live star rating under the clock: what you would get if you finished now */
+.clockbox{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1}
+.hstars{display:flex;gap:2px;font-size:14px}
+.hstars i{font-style:normal;color:rgba(236,226,202,.2);transition:color .35s,text-shadow .35s}
+.hstars i.on{color:var(--candle);text-shadow:0 0 7px rgba(227,177,85,.6)}
+.hstars i.warn{animation:starwarn .7s ease-in-out infinite}
+@keyframes starwarn{50%{opacity:.3;transform:scale(.78)}}
 .purse{
   display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:22px;
   border:1px solid var(--hair);background:linear-gradient(180deg,rgba(227,177,85,.16),rgba(227,177,85,.05));
@@ -124,6 +131,9 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
 /* dimmed enough to read as "not yet playable", light enough to still see the symbol */
 .tile.blocked{filter:brightness(calc(.66 + var(--dep)*.09)) saturate(.66)}
+/* the twin under the selected tile: lit up so its peeking edge gets noticed */
+.tile.blocked.reach{filter:none;
+  box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 0 0 2px var(--candle),0 0 18px 3px rgba(227,177,85,.6)}
 /* Memória mód: a jel rejtve marad, amíg fel nem fordítod */
 .tile.down{color:transparent;text-shadow:none}
 .tile.down::before{
@@ -254,6 +264,35 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
   font-family:Cinzel,serif;font-size:12px;color:var(--ivory)}
 .switch .st{font-size:12px;color:var(--ivory-dim);font-family:"Crimson Pro",serif;font-style:italic}
 .switch.on{border-color:var(--hair);background:rgba(227,177,85,.08)}
+/* ================= pályaválasztó ================= */
+.lvtop{margin:0 0 14px}
+.chap{margin:0 0 9px;border:1px solid var(--hair-soft);border-radius:12px;background:rgba(236,226,202,.025)}
+.chap>button{width:100%;display:flex;align-items:center;gap:10px;padding:11px 13px;
+  background:none;border:0;cursor:pointer;color:var(--ivory);text-align:left;font:inherit}
+.chap .cn{flex:1;min-width:0;font-family:Cinzel,serif;font-size:13.5px;letter-spacing:.03em}
+.chap .cn small{display:block;margin-top:2px;font-family:"Crimson Pro",serif;font-size:12.5px;
+  font-style:italic;letter-spacing:0;color:var(--ivory-dim)}
+.chap .cs{font-family:Cinzel,serif;font-size:12.5px;color:var(--candle);white-space:nowrap}
+.chap .cv{font-size:15px;color:var(--ivory-dim);transition:transform .2s}
+.chap.open .cv{transform:rotate(90deg)}
+.chap.lock>button{opacity:.55}
+.chap .cells{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 10px 12px}
+.chap.open .cells{display:grid}
+.lv{border:1px solid rgba(236,226,202,.12);border-radius:10px;padding:6px 6px 5px;
+  background:rgba(4,7,13,.5);cursor:pointer;text-align:center;transition:transform .12s,border-color .15s}
+.lv:active{transform:scale(.95)}
+.lv canvas{display:block;width:100%;aspect-ratio:1/1}
+.lv .ln{margin-top:3px;font-family:Cinzel,serif;font-size:13px;color:var(--ivory)}
+.lv .ls{height:16px;line-height:16px;font-size:13px;letter-spacing:1px;color:rgba(236,226,202,.2)}
+.lv .ls b{font-weight:400;color:var(--candle)}
+.lv .ls em{font-style:normal;font-size:11.5px;letter-spacing:.02em;color:var(--candle)}
+.lv.done .ls .ok{color:var(--ivory-dim);letter-spacing:0}
+.lv.cur{border-color:var(--candle);box-shadow:0 0 0 1px rgba(227,177,85,.3),0 0 16px rgba(227,177,85,.22)}
+.lv.cur .ln{color:var(--candle)}
+.lv.lock{cursor:default}
+.lv.lock canvas{filter:grayscale(1) brightness(.6);opacity:.7}
+.lv.lock .ln{color:var(--ivory-dim)}
+
 /* ================= napi kihívás, napló ================= */
 .streaks{display:flex;gap:8px;margin:2px 0 14px}
 .streaks div{flex:1;border:1px solid var(--hair-soft);border-radius:10px;padding:9px 4px;
@@ -315,7 +354,10 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
       <h1 id="uiShape">Teknős</h1>
       <p id="uiSub">— csempe hátravan</p>
     </div>
-    <div class="clock" id="uiTime">0:00</div>
+    <div class="clockbox">
+      <div class="clock" id="uiTime">0:00</div>
+      <div class="hstars" id="uiStars" aria-label="Csillagok"><i>★</i><i>★</i><i>★</i></div>
+    </div>
     <div class="purse" id="uiPurse">🪙 <span id="uiCoins">0</span></div>
   </div>
   <div class="track"><i id="uiTrack"></i></div>
@@ -352,11 +394,28 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
     </div>
     <p class="sub" id="modeNote">Ezer szint, csillagokkal és tallérral.</p>
     <button class="act" id="bGo"><span>🪄</span><span id="goText">Kezdjük</span></button>
-    <button class="act quiet" id="bDaily">🗓️ Napi kihívás<span id="dChip"></span></button>
+    <div class="pair">
+      <button class="act quiet" id="bLevels">🗺️ Pályák</button>
+      <button class="act quiet" id="bDaily">🗓️ Napi<span id="dChip"></span></button>
+    </div>
     <div class="pair">
       <button class="act quiet" id="bStats">Napló</button>
       <button class="act quiet" id="bReset">Haladás törlése</button>
     </div>
+  </div>
+</div>
+
+<div class="veil" id="veilLevels">
+  <div class="panel">
+    <div class="seal">🗺️</div>
+    <h2>Pályák</h2>
+    <p id="lvSub"></p>
+    <div class="lvtop">
+      <button class="act" id="lvGo"><span>🪄</span><span id="lvGoText">Folytatás</span></button>
+    </div>
+    <div id="lvList"></div>
+    <div class="rule"></div>
+    <button class="act quiet" id="lvClose">Vissza</button>
   </div>
 </div>
 
@@ -460,16 +519,25 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 const CUSTOM_MUSIC_URL = '';
 
 const PACK_RAW=[
-  ['Varázslótár',['🪄','🧹','🦉','⚗️','🔮','🏰','🚂','🕯️','🐍','🦁','🦡','🦅','📜','🗝️','⚡','🧪','📖','🕰️','🐉','🕷️','🐀','🐈','🏆','🧙','🎩','👻','🪞','🌙','⭐','🍬','🧦','⚔️','🛡️','🪶','🔥','❄️']],
-  ['Bestiárium',['🐉','🦉','🐍','🦁','🦡','🦅','🐺','🦇','🐀','🕷️','🦂','🐸','🐢','🦎','🐙','🦄','🐴','🐗','🦌','🦊','🐻','🦝','🐇','🐿️','🦔','🐓','🦚','🦜','🕊️','🐋','🦈','🐠','🦀','🦑','🐌','🐞']],
-  ['Égbolt',['🌙','⭐','🌟','✨','☄️','🪐','🌠','🔭','🧭','⏳','🕰️','🃏','🔮','🪞','🗺️','📿','🧿','🕯️','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','☀️','🌘','🌑','🌕','🌗','🌌']],
-  ['Bájitaltan',['🧪','⚗️','🌿','🍄','🌰','🧄','🧅','🌱','🍃','🍂','🪵','🪶','🦴','🧂','🍯','🫖','☕','🥣','🧫','🔥','❄️','💧','🌊','🫧','🧊','🍋','🫐','🌶️','🥀','🌹','🌻','🍀','🎍','🪴','🥚','🐚']],
-  ['Ünnepi asztal',['🍬','🍭','🍫','🧁','🍰','🎂','🍪','🍩','🍮','🍨','🍦','🥧','🍯','🍎','🍐','🍊','🍇','🍓','🍒','🥐','🥨','🥯','🧇','🍞','🧀','🍗','🍖','🍲','🫕','🍵','🥤','🎁','🎈','🎉','🎃','🥂']],
-  ['Kastélyi tárak',['🏰','🚪','🗝️','🪑','🛏️','🪟','🕯️','🖼️','🪞','📯','🔔','⛓️','🧭','🗺️','🧳','🎒','📦','🏺','⚱️','🪔','🧵','🪡','🧶','🪢','🔨','🪓','⚒️','🗡️','🏹','🪤','📐','📏','✂️','🖋️','📬','🪜']],
-  ['Évszakok',['🌸','🌷','🌹','🌻','🌼','🍀','🍃','🌿','🍂','🍁','🌰','🎃','🦃','❄️','⛄','🌨️','☃️','🎄','🎁','⭐','🌞','🌝','🌈','☔','⛈️','🌪️','🌊','🏖️','🌴','🍉','🍦','🎆','🎇','🧣','🧤','🌾']],
-  ['Bál és muzsika',['🎻','🎺','🎷','🥁','🎹','🪕','🎸','🪗','🎼','🎵','🎶','🔔','📯','🎤','🎧','💃','🕺','🎭','🎪','🎩','🕰️','🥂','🍾','🍷','🌹','💫','✨','🎆','🎉','🎊','🪩','👑','💍','🎀','🪄','🕯️']],
-  ['Könyvtár',['📖','📚','📕','📗','📘','📙','📓','📔','📒','🧾','📜','✉️','💌','📨','📩','🖋️','🖊️','✏️','📝','🔖','🏷️','📑','🗞️','📰','🗂️','📇','🗃️','🗄️','📁','📂','🔍','🔎','🧮','⌛','🪶','🕯️']],
-  ['Sárkányfészek',['🐲','🐉','🥚','🪺','🔥','🌋','🗻','⛰️','🏔️','🪨','💎','💠','🔷','🔶','🟣','🟠','🟡','🟢','🔵','🔴','⚫','⚪','🟤','🔺','🔻','♦️','♠️','♣️','♥️','🃏','🎲','🧿','🛡️','⚔️','🏆','👑']],
+  /* Every pack: 36 icons that stay tellable apart at 20px. No colour-swapped
+     twins (seven books, twelve zodiac squares, a dozen coloured circles) —
+     at tile size those read as the same symbol. */
+  ['Varázslótár',['🪄','🧹','🦉','⚗️','🔮','🏰','🚂','🕯️','🐍','🦁','🦡','🦅','📜','🗝️','⚡','🧣','📖','🕰️','🐉','🕷️','🐀','🐈','🏆','🧙','🎩','👻','🪞','🌙','⭐','🍬','🧦','⚔️','🛡️','🪶','🔥','❄️']],
+  ['Bestiárium',['🦖','🐧','🐊','🐯','🦦','🦩','🐺','🦇','🐘','🦒','🦂','🐸','🐢','🦎','🐙','🦄','🐴','🐗','🦌','🦊','🐻','🦝','🐇','🐿️','🦔','🐓','🦚','🦜','🕊️','🐋','🦈','🐠','🦀','🦑','🐌','🐞']],
+  ['Égbolt',['🌙','⭐','☄️','🪐','🐦','🔭','🧭','⏳','🌈','☀️','🌌','🛸','🚀','👽','🌍','🛰️','⛈️','🌪️','🧚','🎆','🪁','🎈','🌅','🏔️','🗺️','📿','🧿','🌡️','🧲','🔦','🌋','🎐','🪂','🦋','🌬️','🧊']],
+  ['Bájitaltan',['🧪','⚗️','🍄','🌰','🧄','🥜','🪵','🪶','🦴','🧂','🍯','🫖','☕','🥣','🔬','🔥','❄️','💧','🕸️','🧊','🍋','🫐','🌶️','🥀','🌻','🍀','🥚','🐚','🪲','🐛','⚖️','💀','🍇','🥕','🌽','🍷']],
+  ['Ünnepi asztal',['🍬','🍫','🧁','🍰','🍪','🍩','🍮','🍦','🥧','🍯','🍎','🍐','🍊','🍇','🍓','🍒','🥐','🥨','🥯','🧇','🍞','🧀','🍗','🍲','🫕','🍵','🥤','🎁','🍿','🎉','🎃','🥂','🍕','🍔','🌮','🍤']],
+  ['Kastélyi tárak',['🏰','🚪','🗝️','🪑','🛏️','🪟','🕯️','🖼️','🪞','📯','🔔','⛓️','🧭','🗺️','🧳','🎒','📦','🏺','🛁','🪔','🧵','🪡','🧶','🛡️','🔨','🪓','🪆','🗡️','🏹','🪤','📐','🧸','✂️','🖋️','📬','🪜']],
+  ['Évszakok',['🌸','🌷','🐝','🌻','🐣','🍀','🏕️','🌱','🧺','🍁','🌰','🎃','🦃','❄️','⛄','🎿','🛷','🎄','🎁','🪺','🌞','🏄','🌈','☔','⛈️','🌪️','🌊','🏖️','🌴','🍉','🍦','🎆','🎣','🧣','🧤','🌾']],
+  ['Bál és muzsika',['🎻','🎺','🎷','🥁','🎹','🪕','🎸','🪗','📻','🎵','🎬','🔔','📯','🎤','🎧','💃','🤹','🎭','🎪','🎩','🕰️','🥂','🍾','🪅','🌹','🎨','✨','🎆','🎉','🎟️','🪩','👑','💍','🎀','🪄','🕯️']],
+  ['Könyvtár',['📖','📚','📜','✉️','🖋️','🖨️','📝','🔖','🏷️','📰','🗂️','🔍','🧮','⌛','🪶','🕯️','📌','📎','📅','🎲','🎓','💡','🌐','🔏','📮','🗿','🦉','🪑','🧐','🧩','📣','🎞️','🧷','🪙','🗳️','🕵️']],
+  ['Sárkányfészek',['🐲','🐉','🦖','🪺','🔥','🌋','🧰','🏔️','🪨','💎','💰','🪙','👑','🛡️','⚔️','🏆','🗡️','🏹','⛏️','🔱','📿','🏺','🗝️','💍','🧿','🦴','💀','🦎','🐍','🦅','🪓','🏯','⛩️','🌄','🏮','🧨']],
+  /* film-inspired themes — own names on purpose, the franchise names are trademarks */
+  ['Vándorok és tündék',['💍','🧙','🧝','🧌','🏹','🗡️','🛡️','⚔️','🪓','👑','👁️','🌋','🏔️','🌲','🍄','🐎','🦅','🐺','🕷️','🧭','🔥','🌊','⛵','📜','🗺️','🍺','🥖','🪨','🌟','🪶','🍂','🌬️','🔔','🏰','🦇','🥾'],{lvl:12,price:450}],
+  ['Törpök kincse',['🐉','💰','🪙','💎','👑','🗝️','🗺️','🧭','⛏️','🔨','🪓','🧔','🧙','🍄','🫖','🧀','🥧','🍺','🍎','🥕','🎒','🛶','🏺','🕷️','🐻','🦅','🐦','🌙','🔥','🌲','🍂','🏔️','🚪','🪵','🕯️','💍'],{lvl:30,price:650}],
+  ['Szuperhősök',['🦸','🦹','🛡️','🔨','⚡','🕷️','🕸️','🤖','🧤','💎','🐜','🐆','👊','💥','🚀','🛸','🧬','⚛️','🏹','🦝','🌳','🎯','🛰️','🏙️','🚁','🪐','💣','🔥','❄️','🧲','👁️','🦾','⏳','🌀','🏍️','🎖️'],{lvl:50,price:900}],
+  ['Éjféli város',['🦇','🌃','🃏','🐧','☂️','❓','🐈','🌿','🪙','🎭','🚓','🚨','🌕','🕶️','🦹','💎','🐟','🔱','⚡','💍','🏮','🗡️','🪢','🏛️','🧪','💣','🌧️','💪','🌟','🛡️','👑','🗝️','🔦','🎩','🦸','📰'],{lvl:75,price:1200}],
+  ['Őslények völgye',['🦖','🦕','🥚','🌋','🌴','🦴','🪨','🐊','🍄','🐢','🦂','🦟','🔬','🐍','🦤','🦣','🦏','🦬','🔥','🌊','🐚','🪸','🦈','⛏️','🔦','🧭','🚙','🚁','🥾','🏕️','🧬','☄️','🍖','🌵','🪶','🚧'],{lvl:20,price:550}],
 ];
 
 /* ===========================================================
@@ -533,18 +601,27 @@ const BG_RAW=[
  ['Sárkánybarlang','3f2012','2b1409','100603'], ['Jégterem','1a3a4a','102a38','040f16'],
  ['Mohos kripta','23301f','172214','070c06'],   ['Éjfél','141a2a','0d1220','04060c'],
  ['Naplemente','4a2a18','30180c','130804'],     ['Smaragdcsarnok','12402f','0a2c20','03100b'],
- ['Ezüstköd','2b3340','1e2531','090c10'],       ['Parázsló kandalló','44210f','2e1408','110603']
+ ['Ezüstköd','2b3340','1e2531','090c10'],       ['Parázsló kandalló','44210f','2e1408','110603'],
+ /* backgrounds matching the film-inspired icon packs; the optional last item
+    overrides the unlock level and price, which the formula would put near 1000 */
+ ['Vándorok és tündék','1e3322','132416','060d08',{lvl:12,price:300}],
+ ['Törpök kincse','3d2a10','261a08','0e0904',{lvl:30,price:450}],
+ ['Szuperhősök','2a1a3f','3a1418','0a0610',{lvl:50,price:600}],
+ ['Éjféli város','1b2230','101520','040609',{lvl:75,price:800}],
+ ['Őslények völgye','2c3a1a','3a1c0e','0b0d05',{lvl:20,price:380}]
 ];
 const BGS={};
 BG_RAW.forEach((r,i)=>{
-  BGS['bg'+i]={ name:r[0], price: i?Math.round(150+i*i*5):0, lvl: i?1+i*40:1,
+  const o=r[4]||{};
+  BGS['bg'+i]={ name:r[0], price: o.price??(i?Math.round(150+i*i*5):0), lvl: o.lvl??(i?1+i*40:1),
     v:{'--bg1':'#'+r[1],'--bg2':'#'+r[2],'--bg0':'#'+r[3]} };
 });
 
-/* --- 10 ikonkészlet --- */
+/* --- 14 ikonkészlet --- */
 const PACKS={};
 PACK_RAW.forEach((r,i)=>{
-  PACKS['pk'+i]={ name:r[0], price: i?Math.round(300+i*i*40):0, lvl: i?1+i*95:1, s:r[1] };
+  const o=r[2]||{};
+  PACKS['pk'+i]={ name:r[0], price: o.price??(i?Math.round(300+i*i*40):0), lvl: o.lvl??(i?1+i*95:1), s:r[1] };
 });
 
 /* --- állandó fejlesztések: ez nyeli a tallért a hosszú távon --- */
@@ -804,16 +881,16 @@ function buildLevel(seed,plain,diff){
   return {pos,name:sh.n+(bld2.n?' · '+bld2.n:(ter?' · '+ter.n:'')),rnd};
 }
 function relations(P){
-  const up=[],lf=[],rt=[];
-  for(let i=0;i<P.length;i++){up[i]=[];lf[i]=[];rt[i]=[];}
+  const up=[],lf=[],rt=[],dn=[];
+  for(let i=0;i<P.length;i++){up[i]=[];lf[i]=[];rt[i]=[];dn[i]=-1;}
   for(let i=0;i<P.length;i++){ const a=P[i];
     for(let j=0;j<P.length;j++){ if(i===j) continue; const b=P[j];
       const ov=Math.abs(a.x-b.x)<1&&Math.abs(a.y-b.y)<1;
-      if(b.l===a.l+1&&ov){ up[i].push(j); continue; }
+      if(b.l===a.l+1&&ov){ up[i].push(j); dn[j]=i; continue; }
       if(b.l!==a.l||Math.abs(a.y-b.y)>=1) continue;
       if(b.x<a.x&&a.x-b.x<=1) lf[i].push(j);
       if(b.x>a.x&&b.x-a.x<=1) rt[i].push(j); } }
-  return {up,lf,rt};
+  return {up,lf,rt,dn};
 }
 function freeIdx(i,p,R){
   for(const u of R.up[i]) if(p[u]) return false;
@@ -822,22 +899,47 @@ function freeIdx(i,p,R){
   for(const k of R.rt[i]) if(p[k]){Rt=true;break;}
   return !(L&&Rt);
 }
-function dealSolvable(P,R,sc,rnd){
-  const bag=[]; for(let k=0;k<P.length/2;k++) bag.push(SYMBOLS[k%sc]);
-  for(let a=0;a<80;a++){
+/* Stacked twins: the tile directly under j, if nothing but j keeps it from being
+   free. With the same symbol the two may go together. Without this rule a pair
+   that ends up stacked (often the very last one) could never be cleared — and no
+   reshuffle could help, because only one of the two is ever free. Returns -1 if none. */
+function twinBelow(j,p,R){
+  const i=R.dn[j];
+  if(i<0||!p[i]) return -1;
+  p[j]=false; const f=freeIdx(i,p,R); p[j]=true;
+  return f?i:-1;
+}
+/* A random removal walk that gives each removed pair one symbol from the bag.
+   With relaxed set, a lone free tile may also take the tile it lies on. */
+function walkDeal(idx,pres,R,bag,rnd,relaxed){
+  pres=pres.slice(); let remain=idx.slice(); const out={}; let bi=0;
+  while(remain.length){
+    const free=remain.filter(i=>freeIdx(i,pres,R));
+    let x,y;
+    if(free.length>=2){ shf(rnd,free); x=free[0]; y=free[1]; }
+    else if(relaxed&&free.length===1&&twinBelow(free[0],pres,R)>=0){ x=free[0]; y=twinBelow(x,pres,R); }
+    else return null;
+    out[x]=out[y]=bag[bi++]; pres[x]=pres[y]=false;
+    remain=remain.filter(i=>i!==x&&i!==y);
+  }
+  return out;
+}
+/* Each level draws its own subset of the pack. Taking the first sc icons (as it
+   used to) gave every early level the very same eight symbols. Seeded apart from
+   the layout, so which icons appear changes but the deal's structure does not. */
+function levelPool(seed,sc){
+  return shf(mulberry32((seed*40503)^0x51A3C9),SYMBOLS.slice()).slice(0,sc);
+}
+function dealSolvable(P,R,sc,rnd,pool){
+  const src=pool||SYMBOLS;
+  const bag=[]; for(let k=0;k<P.length/2;k++) bag.push(src[k%sc]);
+  const idx=P.map((_,i)=>i), pres=new Array(P.length).fill(true);
+  /* classic solvability first (same random sequence as before, so existing
+     levels deal exactly as they did); the relaxed walk is only a safety net */
+  for(const relaxed of [false,true]) for(let a=0;a<80;a++){
     shf(rnd,bag);
-    const pres=new Array(P.length).fill(true);
-    let remain=P.map((_,i)=>i);
-    const out=new Array(P.length).fill(null); let bi=0,ok=true;
-    while(remain.length){
-      const free=remain.filter(i=>freeIdx(i,pres,R));
-      if(free.length<2){ ok=false; break; }
-      shf(rnd,free);
-      const x=free[0],y=free[1],s=bag[bi++];
-      out[x]=s; out[y]=s; pres[x]=pres[y]=false;
-      remain=remain.filter(i=>i!==x&&i!==y);
-    }
-    if(ok) return out;
+    const o=walkDeal(idx,pres,R,bag,rnd,relaxed);
+    if(o) return P.map((_,i)=>o[i]);
   }
   return null;
 }
@@ -853,8 +955,9 @@ const rescueCost=()=>Math.round(150*Math.pow(1.8,rescues));
 const board=$('board'), stage=$('stage');
 
 function startLevel(n,depth){
+  /* `level` is the level being played; the saved progress (lvOf) only moves
+     forward in finish(), so picking an old level from the map is safe */
   level=n;
-  if(mode!=='daily') save(LVKEY[mode]||'gm_level',level);
   const daily=mode==='daily';
   const seed=daily?daySeed(dailyDay):level;
   const diff=daily?dayDiff(dailyDay):level;
@@ -864,7 +967,8 @@ function startLevel(n,depth){
   for(const plain of [false,true]){
     if(plain) b=buildLevel(seed,true,diff);
     P=b.pos; R=relations(P); total=P.length;
-    syms=dealSolvable(P,R,Math.min(SYMBOLS.length,8+Math.floor(diff/2)),b.rnd);
+    const sc=Math.min(SYMBOLS.length,8+Math.floor(diff/2));
+    syms=dealSolvable(P,R,sc,b.rnd,levelPool(seed,sc));
     if(syms) break;
   }
   if(!syms){
@@ -883,11 +987,8 @@ function startLevel(n,depth){
   $('uiShape').textContent=daily?('Napi · '+b.name):b.name;
   $('hintN').textContent=zen?'∞':hints; $('shufN').textContent=zen?'∞':shuffles;
   $('bHint').disabled=false; $('bShuf').disabled=false;
+  twinLit=null;
   render(); fit(); refresh(); resetClock();
-  if(!daily&&mode==='adv'){
-    const r=rankOf(level);
-    if(r!==lastRank){ lastRank=r; save('gm_rank',r); if(level>1) setTimeout(()=>toast('Új rang: '+r),700); }
-  }
 }
 function render(){
   board.innerHTML='';
@@ -928,43 +1029,80 @@ function tap(t){
   if(!freeIdx(t.i,present,R)){ jolt(t); beep('no'); return; }
   const mem=mode==='mem';
   if(sel===t){
+    /* tapping the chosen tile again takes it together with its twin beneath */
+    const tw=twinOf(t);
+    if(tw){ takePair(t,tw); return; }
     t.el.classList.remove('sel'); if(mem) t.el.classList.add('down');
-    sel=null; beep('tap'); return;
+    sel=null; markTwin(); beep('tap'); return;
   }
   if(mem) t.el.classList.remove('down');    /* turn it face up */
-  if(!sel){ sel=t; t.el.classList.add('sel'); beep('tap'); startClock(); return; }
+  if(!sel){ sel=t; t.el.classList.add('sel'); markTwin(); beep('tap'); startClock(); return; }
   if(sel.s===t.s){
-    const a=sel; a.el.classList.remove('sel'); sel=null;
-    present[a.i]=present[t.i]=false;
-    sparkle(a); sparkle(t);
-    a.el.classList.add('gone'); t.el.classList.add('gone');
-    beep('ok');
-    setTimeout(()=>{ refresh(); check(); },170);
+    takePair(sel,t);
   }else if(mem){
     /* show both for a moment, then turn them back down */
-    const a=sel; sel=null; memLock=true;
+    const a=sel; sel=null; memLock=true; markTwin();
     a.el.classList.remove('sel'); jolt(t); beep('no');
     setTimeout(()=>{
       a.el.classList.add('down'); t.el.classList.add('down'); memLock=false;
     },850);
   }else{
     sel.el.classList.remove('sel'); jolt(t);
-    sel=t; t.el.classList.add('sel'); beep('tap');
+    sel=t; t.el.classList.add('sel'); markTwin(); beep('tap');
   }
+}
+function takePair(a,b){
+  a.el.classList.remove('sel'); b.el.classList.remove('sel');
+  sel=null; markTwin();
+  present[a.i]=present[b.i]=false;
+  if(mode==='mem'){ a.el.classList.remove('down'); b.el.classList.remove('down'); }
+  sparkle(a); sparkle(b);
+  a.el.classList.add('gone'); b.el.classList.add('gone');
+  beep('ok');
+  setTimeout(()=>{ refresh(); check(); },170);
+}
+/* the identical tile lying directly under t, if taking t would free it */
+function twinOf(t){
+  const i=twinBelow(t.i,present,R);
+  return (i>=0&&tiles[i].s===t.s)?tiles[i]:null;
+}
+/* Light up the twin under the selected tile — it only peeks out by a few pixels,
+   so without a cue nobody would think of tapping the top one again. */
+let twinLit=null;
+function markTwin(){
+  if(twinLit){ twinLit.el.classList.remove('reach'); twinLit=null; }
+  if(!sel||mode==='mem') return;
+  const tw=twinOf(sel); if(!tw) return;
+  tw.el.classList.add('reach'); twinLit=tw;
+  twinTip();
+}
+function twinTip(force){
+  const n=parseInt(load('gm_twintip','0'),10)||0;
+  if(!force&&n>=3) return;                  /* after three times you know the trick */
+  save('gm_twintip',n+1);
+  toast('Alatta ugyanez fekszik — koppints rá újra, és együtt eltűnnek');
 }
 function findMove(){
   const free=[];
   for(const t of tiles) if(present[t.i]&&freeIdx(t.i,present,R)) free.push(t);
   for(let i=0;i<free.length;i++) for(let j=i+1;j<free.length;j++)
     if(free[i].s===free[j].s) return [free[i],free[j]];
+  for(const t of free){ const tw=twinOf(t); if(tw) return [t,tw]; }
   return null;
 }
+const isTwinMove=m=>R.dn[m[0].i]===m[1].i;
 function check(){
   if(present.every(p=>!p)){ finish(true); return; }
-  if(findMove()) return;
+  const m=findMove();
+  if(m){
+    /* only stacked twins are left: say how to take them, or it looks like a dead end */
+    if(isTwinMove(m)) twinTip(true);
+    return;
+  }
   /* Zen never fails: it just reshuffles the board for you */
-  if(mode==='zen'){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); return; }
-  if(shuffles<=0){ finish(false); return; }
+  if(mode==='zen'){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); else finish(false); return; }
+  /* no shuffle left, or none that could help: end it instead of freezing the board */
+  if(shuffles<=0||!doShuffle(true,true)){ finish(false); return; }
   /* Out of moves but shuffles left: say so instead of leaving a dead board. */
   toast('Nincs több lépés — keverj!');
   const b=$('bShuf'); b.classList.add('urge');
@@ -981,8 +1119,9 @@ $('bMenu').onclick=()=>{
 $('bHint').onclick=()=>{
   if(hints<=0) return;
   const m=findMove(); if(!m){ beep('no'); return; }
-  hints--; usedAid++;
+  hints--; usedAid++; updateStars();
   $('hintN').textContent=mode==='zen'?'∞':hints; $('bHint').disabled=mode!=='zen'&&hints<=0;
+  if(isTwinMove(m)) twinTip(true);
   m.forEach(t=>{
     t.el.classList.add('hint');
     if(mode==='mem') t.el.classList.remove('down');
@@ -993,30 +1132,29 @@ $('bHint').onclick=()=>{
   });
   beep('hint');
 };
-$('bShuf').onclick=()=>{ if(doShuffle()) beep('hint'); else beep('no'); };
-function doShuffle(free){
+$('bShuf').onclick=()=>{
+  if(doShuffle()){ beep('hint'); return; }
+  beep('no');
+  /* a board no reshuffle can save must not just sit there */
+  if(shuffles>0&&!findMove()) finish(false);
+};
+/* free: costs nothing (Zen, lifeline); dry: only report whether it would work */
+function doShuffle(free,dry){
   if(!free&&shuffles<=0) return false;
   const rem=tiles.filter(t=>present[t.i]);
   const c={}; rem.forEach(t=>c[t.s]=(c[t.s]||0)+1);
   const bag=[]; for(const s in c) for(let k=0;k<c[s]/2;k++) bag.push(s);
+  const idx=rem.map(t=>t.i);
   let out=null;
-  for(let a=0;a<80&&!out;a++){
+  /* the relaxed walk can also pair stacked tiles, so even a single tower re-deals */
+  for(const relaxed of [false,true]) for(let a=0;a<80&&!out;a++){
     shf(Math.random,bag);
-    const pres=present.slice(); let remain=rem.map(t=>t.i);
-    const res={}; let bi=0,ok=true;
-    while(remain.length){
-      const free=remain.filter(i=>freeIdx(i,pres,R));
-      if(free.length<2){ ok=false; break; }
-      shf(Math.random,free);
-      const x=free[0],y=free[1],s=bag[bi++];
-      res[x]=s; res[y]=s; pres[x]=pres[y]=false;
-      remain=remain.filter(i=>i!==x&&i!==y);
-    }
-    if(ok) out=res;
+    out=walkDeal(idx,present,R,bag,Math.random,relaxed);
   }
   if(!out) return false;
+  if(dry) return true;
   if(!free){
-    shuffles--; usedAid++;
+    shuffles--; usedAid++; updateStars();
     $('shufN').textContent=mode==='zen'?'∞':shuffles;
     $('bShuf').disabled=mode!=='zen'&&shuffles<=0;
   }
@@ -1025,7 +1163,7 @@ function doShuffle(free){
     if(mode==='mem') t.el.classList.add('down');   /* a reshuffle hides them again */
   });
   if(sel){ sel.el.classList.remove('sel'); sel=null; }
-  memLock=false; refresh();
+  markTwin(); memLock=false; refresh();
   return true;
 }
 $('bRestart').onclick=()=>{
@@ -1037,10 +1175,31 @@ $('bRestart').onclick=()=>{
 };
 
 /* ---------------- óra, zárás ---------------- */
-function resetClock(){ clearInterval(timer); timer=null; running=false; $('uiTime').textContent='0:00'; }
+function resetClock(){ clearInterval(timer); timer=null; running=false; $('uiTime').textContent='0:00'; updateStars(); }
 function startClock(){ if(running) return; running=true; t0=Date.now(); tickClock(); }
 function tickClock(){ clearInterval(timer);
-  timer=setInterval(()=>{ $('uiTime').textContent=fmt((Date.now()-t0)/1000|0); },500); }
+  timer=setInterval(()=>{ $('uiTime').textContent=fmt((Date.now()-t0)/1000|0); updateStars(); },500); }
+
+/* ---------------- csillagok ----------------
+   One formula for the live header and the end panel: 3 stars for no help inside
+   the target time, 2 for at most one aid inside 1.6x of it, 1 otherwise. */
+function starsFor(secs){ return usedAid===0&&secs<=par?3:(usedAid<=1&&secs<=par*1.6?2:1); }
+function updateStars(){
+  const secs=running?((Date.now()-t0)/1000|0):0, st=starsFor(secs);
+  const left = st===3 ? par-secs : (st===2 ? par*1.6-secs : Infinity);
+  const els=$('uiStars').children;
+  for(let i=0;i<3;i++){
+    els[i].classList.toggle('on',i<st);
+    /* the star that is about to go blinks for its last ten seconds */
+    els[i].classList.toggle('warn',running&&i===st-1&&st>1&&left<=10);
+  }
+}
+function starMap(m){ try{ return JSON.parse(load('gm_stars_'+m,'{}'))||{}; }catch(e){ return {}; } }
+function keepStars(m,key,st){
+  const o=starMap(m);
+  if((o[key]||0)>=st) return false;
+  o[key]=st; save('gm_stars_'+m,JSON.stringify(o)); return true;
+}
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
 function finish(won){
@@ -1049,21 +1208,29 @@ function finish(won){
   const daily=mode==='daily';
   stAdd('time',secs); lastBanked=secs;   /* a lifeline refunds this, see bRescue */
   if(won){
-    const st = usedAid===0&&secs<=par ? 3 : (usedAid<=1&&secs<=par*1.6 ? 2 : 1);
+    const st=starsFor(secs);
     const bestKey = daily?'gm_dbest_'+dailyDay:'gm_best_'+(mode==='adv'?level:mode+level);
+    const starKey = daily?dailyDay:level;
+    const prevStars = starMap(mode)[starKey]||0;
+    /* a level picked again from the map pays a fraction, plus a bonus per new star —
+       otherwise replaying level 1 would be the best way to earn */
+    const replay = daily ? dailyDone() : level<lvOf(mode);
     const first=parseInt(load(bestKey,'0'),10)?0:20;
     let gain=Math.round((12+Math.floor(total/6)+st*12+(secs<=par?15:0)+first)*coinMult());
+    if(replay) gain=Math.round(gain*.3)+Math.max(0,st-prevStars)*15;
     let chest=0;
-    if(mode==='adv'){
+    if(mode==='adv'&&!replay){
       if(level%100===0) chest=500+level*4;
       else if(level%10===0) chest=50+level*2;
     }
     gain+=chest;
     /* stats first, so the achievement check below sees this win */
-    stAdd('solved',1); stAdd('stars',st);
-    if(st===3) stAdd('perfect',1);
-    if(mode==='mem') stAdd('mem',1);
-    if(mode==='zen') stAdd('zen',1);
+    if(!replay) stAdd('solved',1);
+    stAdd('stars',Math.max(0,st-prevStars));
+    if(st===3&&prevStars<3) stAdd('perfect',1);
+    if(mode==='mem'&&!replay) stAdd('mem',1);
+    if(mode==='zen'&&!replay) stAdd('zen',1);
+    const newStars=keepStars(mode,starKey,st);
     const fb=stGet('best'); if(!fb||secs<fb) save('gm_st_best',secs);
     $('endSeal').textContent='✦';
     $('endTitle').textContent='Kirakva';
@@ -1088,16 +1255,21 @@ function finish(won){
     $('endCoins').textContent='';
     countUp($('endCoins'),gain,first);
     const prev=parseInt(load(bestKey,'0'),10);
-    if(!prev||secs<prev){ save(bestKey,secs); $('endBest').textContent='Új rekord.'; }
-    else $('endBest').textContent='Eddigi legjobb: '+fmt(prev);
+    if(!prev||secs<prev){ save(bestKey,secs); $('endBest').textContent='Új időrekord.'; }
+    else $('endBest').textContent='Eddigi legjobb idő: '+fmt(prev);
+    if(newStars&&prevStars) $('endBest').textContent+='  Új csillagrekord: '+prevStars+' → '+st+' ★';
+    else if(!newStars&&prevStars>st) $('endBest').textContent+='  Legjobbad ezen: '+'★'.repeat(prevStars);
     setCoins(coins+gain,true);
-    if(!daily) save(LVKEY[mode]||'gm_level',level+1);
+    /* progress only ever moves forward — replaying an old level must not rewind it */
+    if(!daily&&level+1>lvOf(mode)) save(LVKEY[mode]||'gm_level',level+1);
     $('bNext').style.display=daily?'none':'';
     $('bAgainLvl').textContent=daily?'A mai pálya újra':'Ez a szint újra';
     fanfare();
     if(mode==='adv'){
+      const r=rankOf(lvOf('adv'));
+      if(r!==lastRank){ lastRank=r; save('gm_rank',r); setTimeout(()=>toast('Új rang: '+r),1700); }
       const soon=nextUnlock();
-      if(soon) setTimeout(()=>toast('„'+soon.name+'" '+Math.max(0,soon.price-coins)+' tallérra'),1500);
+      if(soon) setTimeout(()=>toast('„'+soon.name+'" '+Math.max(0,soon.price-coins)+' tallérra'),3200);
     }
   }else{
     $('endSeal').textContent='✕';
@@ -1111,7 +1283,7 @@ function finish(won){
   /* Lifeline: pay coins for one more shuffle and carry on where you stopped */
   const cost=rescueCost();
   $('bRescue').style.display=won?'none':'';
-  $('bRescue').disabled=coins<cost;
+  $('bRescue').disabled=coins<cost||(!won&&!doShuffle(true,true));
   $('rescueText').textContent='Mentőöv — '+cost+' 🪙';
   checkAch();
   $('veilEnd').classList.add('on'); armBack();
@@ -1235,6 +1407,101 @@ function inProgress(){
   return !$('veilStart').classList.contains('on') && present.some(p=>!p);
 }
 
+/* ---------------- pályaválasztó ----------------
+   Chapters of 25 levels, named after the ranks. Only the current chapter opens
+   by default; each level shows a small top-down sketch of its real layout and
+   the stars earned on it. Sketches are drawn lazily, as they scroll into view. */
+const CHAP=25;
+const playMode=()=>LVKEY[mode]?mode:(LVKEY[load('gm_mode','adv')]?load('gm_mode','adv'):'adv');
+function totalStars(m){ let n=0; const o=starMap(m); for(const k in o) n+=o[k]; return n; }
+function drawPreview(cv,lv){
+  const b=buildLevel(lv);
+  let mx=0,my=0,ml=0;
+  for(const t of b.pos){ mx=Math.max(mx,t.x); my=Math.max(my,t.y); ml=Math.max(ml,t.l); }
+  const W=(mx+1)*40+ml*6+8, H=(my+1)*52+ml*7+8;
+  const dpr=Math.min(2,window.devicePixelRatio||1), size=cv.clientWidth||90;
+  cv.width=Math.round(size*dpr); cv.height=Math.round(size*dpr);
+  const c=cv.getContext('2d');
+  const s=Math.min(cv.width/W, cv.height/H)*.94;
+  const ox=(cv.width-W*s)/2, oy=(cv.height-H*s)/2+ml*7*s;
+  const top=Math.max(1,ml);
+  c.lineWidth=Math.max(.7,s*1.6); c.strokeStyle='rgba(24,17,8,.6)';
+  for(const t of [...b.pos].sort((p,q)=>p.l-q.l||p.y-q.y||p.x-q.x)){
+    const x=ox+(t.x*40+t.l*6)*s, y=oy+(t.y*52-t.l*7)*s, w=38*s, h=50*s;
+    /* higher layers are lighter, like candlelight catching the top of the stack */
+    c.fillStyle=mix('#5d4f36','#f5ecd7',.35+.65*(t.l/top));
+    c.beginPath();
+    if(c.roundRect) c.roundRect(x,y,w,h,Math.max(1,5*s)); else c.rect(x,y,w,h);
+    c.fill(); c.stroke();
+  }
+}
+let lvObs=null;
+function lvObserver(){
+  if(!lvObs) lvObs=new IntersectionObserver(es=>{
+    for(const e of es) if(e.isIntersecting){
+      lvObs.unobserve(e.target); drawPreview(e.target,+e.target.dataset.lv);
+    }
+  },{root:$('veilLevels'),rootMargin:'240px'});
+  return lvObs;
+}
+function fillChap(box,a,z,un,stars,m){
+  const cells=box.lastChild; if(cells.childElementCount) return;
+  const obs=lvObserver();
+  for(let l=a;l<=z;l++){
+    const done=l<un, cur=l===un, locked=l>un, st=stars[l]||0;
+    const d=document.createElement('div');
+    d.className='lv'+(done?' done':'')+(cur?' cur':'')+(locked?' lock':'');
+    const mark = locked ? '🔒'
+      : cur ? '<em>▶ most</em>'
+      : st ? '<b>'+'★'.repeat(st)+'</b>'+'★'.repeat(3-st)
+      : '<span class="ok">✓</span>';           /* finished before stars were kept */
+    d.innerHTML='<canvas data-lv="'+l+'"></canvas><div class="ln">'+l+'</div><div class="ls">'+mark+'</div>';
+    if(!locked) d.onclick=()=>playFromMap(m,l);
+    cells.appendChild(d);
+    obs.observe(d.firstChild);
+  }
+}
+function drawLevels(){
+  const m=playMode(), un=lvOf(m), stars=starMap(m);
+  const curCh=Math.floor((un-1)/CHAP), lastCh=Math.min(Math.floor(999/CHAP),curCh+1);
+  $('lvSub').textContent=MODES[m].n+' · '+(un-1)+' szint kész · '+totalStars(m)+' ★';
+  $('lvGoText').textContent=un>1?('Folytatás — '+un+'. szint'):'Kezdjük';
+  const list=$('lvList'); list.innerHTML='';
+  let curBox=null;
+  /* chapters up to the current one, plus the next as a locked preview */
+  for(let ch=0;ch<=lastCh;ch++){
+    const a=ch*CHAP+1, z=Math.min(1000,a+CHAP-1), locked=a>un;
+    let got=0; for(let l=a;l<=z;l++) got+=stars[l]||0;
+    const box=document.createElement('div');
+    box.className='chap'+(locked?' lock':'');
+    box.innerHTML='<button><span class="cn">'+a+'–'+z+'<small>'+RANKS[Math.min(RANKS.length-1,ch)]+'</small></span>'+
+      '<span class="cs">'+(locked?'🔒':got+' / '+(z-a+1)*3+' ★')+'</span><span class="cv">›</span></button><div class="cells"></div>';
+    box.firstChild.onclick=()=>{
+      const open=box.classList.toggle('open');
+      if(open) fillChap(box,a,z,un,stars,m);
+      beep('tap');
+    };
+    list.appendChild(box);
+    if(ch===curCh){ box.classList.add('open'); fillChap(box,a,z,un,stars,m); curBox=box; }
+  }
+  return curBox;
+}
+function playFromMap(m,l){
+  ensureAudio();
+  if(mode!==m) setMode(m);
+  for(const id of ['veilLevels','veilStart']) $(id).classList.remove('on');
+  startLevel(l); if(musicOn) startMusic();
+}
+$('bLevels').onclick=()=>{
+  const cur=drawLevels();
+  $('veilLevels').classList.add('on'); $('veilLevels').scrollTop=0;
+  armBack(); beep('tap');
+  /* further along, open straight at the current chapter */
+  if(cur&&cur.previousSibling) requestAnimationFrame(()=>cur.scrollIntoView({block:'start',behavior:'smooth'}));
+};
+$('lvGo').onclick=()=>{ const m=playMode(); playFromMap(m,lvOf(m)); };
+$('lvClose').onclick=()=>{ $('veilLevels').classList.remove('on'); beep('tap'); };
+
 /* ---------------- mód, napi kihívás, napló ---------------- */
 function setMode(m){
   if(!LVKEY[m]) m='adv';
@@ -1286,7 +1553,7 @@ function drawStats(){
     ['Összjáték-idő',        fmtLong(s.time)],
     ['Leggyorsabb szint',    s.best?fmt(s.best):'—'],
     ['Három csillag',        s.perfect],
-    ['Összegyűjtött csillag',stGet('stars')],
+    ['Összegyűjtött csillag',totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily')],
     ['Napi sorozat',         curStreak()+' nap'],
     ['Leghosszabb sorozat',  s.bestStreak+' nap'],
     ['Napi pályák',          dailyDays().length],
@@ -1330,7 +1597,7 @@ $('bRescue').onclick=()=>{
   if(coins<cost){ beep('no'); return; }
   if(!doShuffle(true)){ toast('Ezt a táblát már nem lehet megkeverni'); beep('no'); return; }
   setCoins(coins-cost,true);
-  rescues++; usedAid++;
+  rescues++; usedAid++; updateStars();
   stAdd('time',-lastBanked); lastBanked=0;   /* not a finished level after all */
   if(running) tickClock();                   /* the clock keeps running from t0 */
   $('veilEnd').classList.remove('on');
@@ -1347,6 +1614,8 @@ function wipeAll(){
   save('gm_skin','sk0'); save('gm_pack','pk0'); save('gm_bg','bg0');
   for(let k=1;k<=1000;k++) save('gm_best_'+k,'');
   save('gm_ach','[]'); save('gm_daily_days','[]');
+  for(const m of ['adv','mem','zen','daily']) save('gm_stars_'+m,'{}');
+  save('gm_twintip','0');
   save('gm_daily_last',''); save('gm_daily_streak','0'); save('gm_daily_best','0');
   for(const k of ['solved','time','stars','perfect','best','mem','zen']) save('gm_st_'+k,'0');
   owned=BASE_OWNED.slice(); for(const k in UPG) upg[k]=0; lastRank='';
@@ -1370,7 +1639,7 @@ function backStep(){
   if($('veilAsk').classList.contains('on')){
     askFn=null; $('veilAsk').classList.remove('on'); beep('tap'); return true;
   }
-  for(const id of ['veilStats','veilDaily','veilShop']){
+  for(const id of ['veilLevels','veilStats','veilDaily','veilShop']){
     if($(id).classList.contains('on')){
       $(id).classList.remove('on'); beep('tap'); return true;
     }
@@ -1384,7 +1653,7 @@ function backStep(){
 /* Leaving a level abandons it — the same thing the system back button does. */
 function toMenu(){
   clearInterval(timer); timer=null; running=false;
-  for(const id of ['veilShop','veilDaily','veilStats','veilEnd','veilAsk']) $(id).classList.remove('on');
+  for(const id of ['veilShop','veilDaily','veilStats','veilLevels','veilEnd','veilAsk']) $(id).classList.remove('on');
   askFn=null;
   $('veilStart').classList.add('on'); refreshStart();
   beep('tap');
@@ -1447,6 +1716,7 @@ addEventListener('orientationchange',()=>setTimeout(()=>fit(),250));
 
 /* --- érintés: egy ujj pásztáz (nagyítva), két ujj csippent --- */
 const ptrs=new Map();
+const TAPSLOP=16;   /* px of finger travel still treated as a tap */
 let pinch=null, dragged=0, lastTap=0, lastTapX=0, lastTapY=0, gestTimer=0;
 function gesture(on){
   clearTimeout(gestTimer);
@@ -1470,9 +1740,11 @@ stage.addEventListener('pointermove',e=>{
   const dx=e.clientX-p.x, dy=e.clientY-p.y;
   p.x=e.clientX; p.y=e.clientY;
   if(ptrs.size===1){
-    dragged+=Math.abs(dx)+Math.abs(dy);
+    /* Only a real pan counts as a drag. At fit zoom nothing can pan, so finger
+       jitter must never eat a tile tap — it used to above 10px. */
     if(vNow.s>vBase.s+1e-4){
-      if(dragged>10) gesture(true);
+      dragged+=Math.abs(dx)+Math.abs(dy);
+      if(dragged>TAPSLOP) gesture(true);
       vNow.tx+=dx; vNow.ty+=dy; clampView(); applyView();
     }
   }else if(ptrs.size===2&&pinch&&pinch.d>8){
@@ -1487,7 +1759,7 @@ const ptrUp=e=>{
   ptrs.delete(e.pointerId);
   if(ptrs.size<2) pinch=null;
   if(!ptrs.size) gesture(false);
-  if(dragged<=10&&vNow.s>vBase.s+1e-4){
+  if(dragged<=TAPSLOP&&vNow.s>vBase.s+1e-4){
     /* double tap in the same spot while zoomed in = back to fit */
     const now=Date.now();
     if(now-lastTap<320&&Math.hypot(e.clientX-lastTapX,e.clientY-lastTapY)<26){
@@ -1498,7 +1770,7 @@ const ptrUp=e=>{
 stage.addEventListener('pointerup',ptrUp);
 stage.addEventListener('pointercancel',ptrUp);
 /* a drag must not count as a tile tap */
-board.addEventListener('click',e=>{ if(dragged>10){ e.stopPropagation(); e.preventDefault(); } },true);
+board.addEventListener('click',e=>{ if(dragged>TAPSLOP){ e.stopPropagation(); e.preventDefault(); } },true);
 
 /* ================= hang ================= */
 let ac=null, musicGain=null, musicTimer=null, drone=[], audioEl=null;
@@ -1631,7 +1903,8 @@ document.addEventListener('visibilitychange',()=>{
 const SAVE_KEYS=['gm_level','gm_mem_level','gm_zen_level','gm_mode',
   'gm_coins','gm_owned','gm_upg','gm_skin','gm_pack','gm_bg','gm_rank','gm_sfx','gm_music',
   'gm_ach','gm_daily_days','gm_daily_last','gm_daily_streak','gm_daily_best',
-  'gm_st_solved','gm_st_time','gm_st_stars','gm_st_perfect','gm_st_best','gm_st_mem','gm_st_zen'];
+  'gm_st_solved','gm_st_time','gm_st_stars','gm_st_perfect','gm_st_best','gm_st_mem','gm_st_zen',
+  'gm_stars_adv','gm_stars_mem','gm_stars_zen','gm_stars_daily'];
 function exportSave(){
   const o={v:2,best:{}};
   for(const k of SAVE_KEYS){ const x=load(k,null); if(x!=null) o[k]=x; }
