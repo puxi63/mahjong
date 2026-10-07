@@ -463,7 +463,14 @@ body.kid .hstars{font-size:17px}
   padding:11px 17px;font-family:Cinzel,serif;font-size:12.5px;color:var(--candle);
   box-shadow:0 8px 24px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.28s}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Reduced motion — which Android also reports while battery saver is on. It used
+   to switch off every animation and transition, and then the game felt laggy:
+   a picked tile jumped instead of lifting, a finished triple sat still for half a
+   second and then blinked out, menu buttons gave no feedback. The short feedback
+   motions stay; only the endless decorative loops stop. */
+@media (prefers-reduced-motion:reduce){
+  .flame,.hstars i.warn,.key.urge,body.kid .tile:not(.blocked)::before{animation:none}
+}
 </style>
 </head>
 <body>
