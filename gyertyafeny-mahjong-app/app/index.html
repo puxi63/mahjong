@@ -1091,36 +1091,54 @@ function layerStep(top,kid){
 const easyMode=()=>mode==='zen'||mode==='kid';
 
 /* ---- Hármas mód ----
-   Same layouts as the adventure, trimmed to a multiple of three. Symbols are dealt
-   in triples along a removal walk, taking one free tile at a time: following that
-   order the tray never holds more than three, so every level can be cleared. */
+   Difficulty in a tray game comes from what you cannot see. Measured with a
+   simulated player that follows the hint logic: dealing each kind's three copies
+   back to back on shallow boards let it win 96% of levels 1-10. So the tray mode
+   now plays deeper layouts, uses more kinds (fewer copies of each), and interleaves
+   the triples — still always clearable, see dealTriples. */
+const TRAY_DEPTH=12;          /* layout difficulty runs this many levels ahead */
 function buildTray(seed,diff){
-  const b=buildLevel(seed,false,diff), pos=b.pos;
+  const b=buildLevel(seed,false,diff+TRAY_DEPTH), pos=b.pos;
   pos.sort((a,c)=>c.l-a.l||c.y-a.y||c.x-a.x);
   while(pos.length%3) pos.shift();                /* drop from the top, like the odd-trim */
   pos.sort((a,c)=>a.l-c.l||a.y-c.y||a.x-c.x);
   return b;
 }
-const trayKinds=lv=>Math.min(SYMBOLS.length,6+Math.floor(lv/3));
-function walkDeal3(idx,pres,R,bag,rnd){
-  pres=pres.slice(); let remain=idx.slice(); const out={}; let bi=0;
+/* share of triples that get a kind of their own: 0.6 on level 1, 0.95 at level 100,
+   1.0 at level 400 — at 1.0 every kind appears exactly once, as a single triple */
+function trayKinds(lv,n){
+  const frac=lv<=100?Math.min(.95,.6+lv*.0035):Math.min(1,.95+(lv-100)*.05/300);
+  return Math.min(SYMBOLS.length,Math.max(8,Math.round(n/3*frac)));
+}
+/* Walk a removal order (one free tile at a time), then hand out symbols along it so
+   that at most three kinds are "open" at once. Followed in that order the tray holds
+   at most 2+2+2 tiles, and the seventh always completes a triple — so every level
+   can be cleared. pNew is how eagerly a new kind opens: higher spreads triples wider. */
+function dealTriples(P,R,sc,rnd,pool,pNew){
+  const kinds=[]; for(let k=0;k<P.length/3;k++) kinds.push(pool[k%sc]);
+  shf(rnd,kinds);
+  const pres=new Array(P.length).fill(true); let remain=P.map((_,i)=>i); const order=[];
   while(remain.length){
-    const s=bag[bi++];
-    for(let k=0;k<3;k++){
-      const free=remain.filter(i=>freeIdx(i,pres,R));
-      if(!free.length) return null;
-      const x=free[Math.floor(rnd()*free.length)];
-      out[x]=s; pres[x]=false; remain=remain.filter(i=>i!==x);
-    }
+    const free=remain.filter(i=>freeIdx(i,pres,R));
+    if(!free.length) return null;
+    const x=free[Math.floor(rnd()*free.length)];
+    order.push(x); pres[x]=false; remain=remain.filter(i=>i!==x);
+  }
+  const out=new Array(P.length), open=[]; let ki=0;
+  for(let pos=0;pos<order.length;pos++){
+    const left=order.length-pos, need=open.reduce((a,o)=>a+3-o.c,0);
+    /* a new kind needs two more tiles after this one, and room under the cap of three */
+    const canOpen=open.length<3&&ki<kinds.length&&left-1>=need+2;
+    let o;
+    if(canOpen&&(!open.length||rnd()<pNew)){ o={s:kinds[ki++],c:0}; open.push(o); }
+    else o=open[Math.floor(rnd()*open.length)];
+    out[order[pos]]=o.s;
+    if(++o.c===3) open.splice(open.indexOf(o),1);
   }
   return out;
 }
-function dealTriples(P,R,sc,rnd,pool){
-  const bag=[]; for(let k=0;k<P.length/3;k++) bag.push(pool[k%sc]);
-  shf(rnd,bag);
-  const o=walkDeal3(P.map((_,i)=>i),new Array(P.length).fill(true),R,bag,rnd);
-  return o?P.map((_,i)=>o[i]):null;
-}
+/* how eagerly a new kind opens while dealing: 0.65 on level 1, 0.85 at 100, 0.97 at 400 */
+const trayOpenRate=lv=>lv<=100?Math.min(.85,.65+lv*.002):Math.min(.97,.85+(lv-100)*.12/300);
 function relations(P){
   const up=[],lf=[],rt=[],dn=[];
   for(let i=0;i<P.length;i++){up[i]=[];lf[i]=[];rt[i]=[];dn[i]=-1;}
@@ -1211,8 +1229,8 @@ function startLevel(n,depth){
   let b=null, syms=null;
   if(tray){
     b=buildTray(seed,diff); P=b.pos; R=relations(P); total=P.length;
-    const sc=trayKinds(diff);
-    syms=dealTriples(P,R,sc,b.rnd,levelPool(seed,sc));
+    const sc=trayKinds(diff,P.length);
+    syms=dealTriples(P,R,sc,b.rnd,levelPool(seed,sc),trayOpenRate(diff));
   }else for(const plain of [false,true]){
     b=kid?buildKid(level):buildLevel(seed,plain,diff);
     P=b.pos; R=relations(P); total=P.length;
