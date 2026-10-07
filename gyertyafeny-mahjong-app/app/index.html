@@ -129,8 +129,11 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   text-shadow:0 1px 0 var(--t-shadow);
   filter:brightness(calc(.90 + var(--dep)*.13));
   /* transform and opacity only: those run on the compositor. Animating filter and
-     box-shadow repainted every tile that became free, on every frame of a match. */
-  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s;
+     box-shadow repainted every tile that became free, on every frame of a match.
+     z-index steps back only after the drop-back animation: a tile that sinks under
+     its neighbours while still moving makes every overlapping tile above it get its
+     own layer and repaint — on a phone that is the stutter after a deselect. */
+  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s,z-index 0s linear .14s;
 }
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
 /* drawn icon packs: the image sits where the emoji would, at about the same size */
@@ -155,7 +158,11 @@ header{position:relative;z-index:3;padding:9px 13px 0}
              0 0 0 1px rgba(227,177,85,.34),
              inset 0 1px 0 var(--t-gloss),inset 0 -3px 5px var(--t-inner);
 }
-.tile.sel{transform:translateY(-4px) scale(1.06);
+/* The selected tile keeps its own compositor layer for as long as it is selected,
+   so the lift does not repaint the board around it a second time when it ends.
+   Its z-index rises at once (no delay), so it is on top for the whole lift. */
+.tile.sel{transform:translateY(-4px) scale(1.06);will-change:transform;
+  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s,z-index 0s;
   box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 10px 18px rgba(0,0,0,.6),
              0 0 0 2px var(--candle),0 0 24px 4px rgba(227,177,85,.65);z-index:9999!important}
 .tile.hint{animation:hint .75s ease-in-out 3}
