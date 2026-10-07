@@ -133,6 +133,9 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s;
 }
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
+/* drawn icon packs: the image sits where the emoji would, at about the same size */
+.tile img,.fly img,#tray .slot b img{width:82%;height:auto;display:block;pointer-events:none;-webkit-user-drag:none}
+.row img{height:30px;width:auto;vertical-align:middle}
 /* dimmed enough to read as "not yet playable", light enough to still see the symbol */
 .tile.blocked{filter:brightness(calc(.66 + var(--dep)*.09)) saturate(.66)}
 /* the twin under the selected tile: lit up so its peeking edge gets noticed */
@@ -657,26 +660,32 @@ body.kid .hstars{font-size:17px}
    ========================================================= */
 const CUSTOM_MUSIC_URL = '';
 
+/* a drawn pack lives in packs/<folder>/01.webp … 36.webp; to turn an emoji pack into
+   pictures, drop the files in and swap its list for imgPack('<folder>') */
+const imgPack=(folder,n=36)=>Array.from({length:n},(_,i)=>'img:packs/'+folder+'/'+String(i+1).padStart(2,'0')+'.webp');
 const PACK_RAW=[
   /* Every pack: 36 icons that stay tellable apart at 20px. No colour-swapped
      twins (seven books, twelve zodiac squares, a dozen coloured circles) —
      at tile size those read as the same symbol. */
-  ['Varázslótár',['🪄','🧹','🦉','⚗️','🔮','🏰','🚂','🕯️','🐍','🦁','🦡','🦅','📜','🗝️','⚡','🧣','📖','🕰️','🐉','🕷️','🐀','🐈','🏆','🧙','🎩','👻','🪞','🌙','⭐','🍬','🧦','⚔️','🛡️','🪶','🔥','❄️']],
-  ['Bestiárium',['🦖','🐧','🐊','🐯','🦦','🦩','🐺','🦇','🐘','🦒','🦂','🐸','🐢','🦎','🐙','🦄','🐴','🐗','🦌','🦊','🐻','🦝','🐇','🐿️','🦔','🐓','🦚','🦜','🕊️','🐋','🦈','🐠','🦀','🦑','🐌','🐞']],
-  ['Égbolt',['🌙','⭐','☄️','🪐','🐦','🔭','🧭','⏳','🌈','☀️','🌌','🛸','🚀','👽','🌍','🛰️','⛈️','🌪️','🧚','🎆','🪁','🎈','🌅','🏔️','🗺️','📿','🧿','🌡️','🧲','🔦','🌋','🎐','🪂','🦋','🌬️','🧊']],
-  ['Bájitaltan',['🧪','⚗️','🍄','🌰','🧄','🥜','🪵','🪶','🦴','🧂','🍯','🫖','☕','🥣','🔬','🔥','❄️','💧','🕸️','🧊','🍋','🫐','🌶️','🥀','🌻','🍀','🥚','🐚','🪲','🐛','⚖️','💀','🍇','🥕','🌽','🍷']],
-  ['Ünnepi asztal',['🍬','🍫','🧁','🍰','🍪','🍩','🍮','🍦','🥧','🍯','🍎','🍐','🍊','🍇','🍓','🍒','🥐','🥨','🥯','🧇','🍞','🧀','🍗','🍲','🫕','🍵','🥤','🎁','🍿','🎉','🎃','🥂','🍕','🍔','🌮','🍤']],
-  ['Kastélyi tárak',['🏰','🚪','🗝️','🪑','🛏️','🪟','🕯️','🖼️','🪞','📯','🔔','⛓️','🧭','🗺️','🧳','🎒','📦','🏺','🛁','🪔','🧵','🪡','🧶','🛡️','🔨','🪓','🪆','🗡️','🏹','🪤','📐','🧸','✂️','🖋️','📬','🪜']],
-  ['Évszakok',['🌸','🌷','🐝','🌻','🐣','🍀','🏕️','🌱','🧺','🍁','🌰','🎃','🦃','❄️','⛄','🎿','🛷','🎄','🎁','🪺','🌞','🏄','🌈','☔','⛈️','🌪️','🌊','🏖️','🌴','🍉','🍦','🎆','🎣','🧣','🧤','🌾']],
-  ['Bál és muzsika',['🎻','🎺','🎷','🥁','🎹','🪕','🎸','🪗','📻','🎵','🎬','🔔','📯','🎤','🎧','💃','🤹','🎭','🎪','🎩','🕰️','🥂','🍾','🪅','🌹','🎨','✨','🎆','🎉','🎟️','🪩','👑','💍','🎀','🪄','🕯️']],
-  ['Könyvtár',['📖','📚','📜','✉️','🖋️','🖨️','📝','🔖','🏷️','📰','🗂️','🔍','🧮','⌛','🪶','🕯️','📌','📎','📅','🎲','🎓','💡','🌐','🔏','📮','🗿','🦉','🪑','🧐','🧩','📣','🎞️','🧷','🪙','🗳️','🕵️']],
-  ['Sárkányfészek',['🐲','🐉','🦖','🪺','🔥','🌋','🧰','🏔️','🪨','💎','💰','🪙','👑','🛡️','⚔️','🏆','🗡️','🏹','⛏️','🔱','📿','🏺','🗝️','💍','🧿','🦴','💀','🦎','🐍','🦅','🪓','🏯','⛩️','🌄','🏮','🧨']],
+  /* the default pack (pk0) is a drawn one: 36 WebP files, 256px, transparent, with a
+     baked-in light outline so the thin dark ones still read on dark skins. Keeping it
+     on the pk0 key means every existing player gets the pictures without doing a thing. */
+  ['Varázslóiskola',imgPack('varazsloiskola')],
+  ['Bestiárium',imgPack('bestiarium')],
+  ['Égbolt',imgPack('egbolt')],
+  ['Bájitaltan',imgPack('bajitaltan')],
+  ['Ünnepi asztal',imgPack('unnepi-asztal')],
+  ['Kastélyi tárak',imgPack('kastelyi-tarak')],
+  ['Évszakok',imgPack('evszakok')],
+  ['Bál és muzsika',imgPack('bal-es-muzsika')],
+  ['Könyvtár',imgPack('konyvtar')],
+  ['Sárkányfészek',imgPack('sarkanyfeszek')],
   /* film-inspired themes — own names on purpose, the franchise names are trademarks */
-  ['Vándorok és tündék',['💍','🧙','🧝','🧌','🏹','🗡️','🛡️','⚔️','🪓','👑','👁️','🌋','🏔️','🌲','🍄','🐎','🦅','🐺','🕷️','🧭','🔥','🌊','⛵','📜','🗺️','🍺','🥖','🪨','🌟','🪶','🍂','🌬️','🔔','🏰','🦇','🥾'],{lvl:12,price:450}],
-  ['Törpök kincse',['🐉','💰','🪙','💎','👑','🗝️','🗺️','🧭','⛏️','🔨','🪓','🧔','🧙','🍄','🫖','🧀','🥧','🍺','🍎','🥕','🎒','🛶','🏺','🕷️','🐻','🦅','🐦','🌙','🔥','🌲','🍂','🏔️','🚪','🪵','🕯️','💍'],{lvl:30,price:650}],
-  ['Szuperhősök',['🦸','🦹','🛡️','🔨','⚡','🕷️','🕸️','🤖','🧤','💎','🐜','🐆','👊','💥','🚀','🛸','🧬','⚛️','🏹','🦝','🌳','🎯','🛰️','🏙️','🚁','🪐','💣','🔥','❄️','🧲','👁️','🦾','⏳','🌀','🏍️','🎖️'],{lvl:50,price:900}],
-  ['Éjféli város',['🦇','🌃','🃏','🐧','☂️','❓','🐈','🌿','🪙','🎭','🚓','🚨','🌕','🕶️','🦹','💎','🐟','🔱','⚡','💍','🏮','🗡️','🪢','🏛️','🧪','💣','🌧️','💪','🌟','🛡️','👑','🗝️','🔦','🎩','🦸','📰'],{lvl:75,price:1200}],
-  ['Őslények völgye',['🦖','🦕','🥚','🌋','🌴','🦴','🪨','🐊','🍄','🐢','🦂','🦟','🔬','🐍','🦤','🦣','🦏','🦬','🔥','🌊','🐚','🪸','🦈','⛏️','🔦','🧭','🚙','🚁','🥾','🏕️','🧬','☄️','🍖','🌵','🪶','🚧'],{lvl:20,price:550}],
+  ['Vándorok és tündék',imgPack('vandorok-es-tundek'),{lvl:12,price:450}],
+  ['Törpök kincse',imgPack('torpok-kincse'),{lvl:30,price:650}],
+  ['Szuperhősök',imgPack('szuperhosok'),{lvl:50,price:900}],
+  ['Éjféli város',imgPack('ejfeli-varos'),{lvl:75,price:1200}],
+  ['Őslények völgye',imgPack('oslenyek-volgye'),{lvl:20,price:550}],
 ];
 
 /* ===========================================================
@@ -793,6 +802,13 @@ const BASE_OWNED=['sk0','pk0','bg0'];
 let owned; try{ owned=JSON.parse(load('gm_owned',JSON.stringify(BASE_OWNED))); }
 catch(e){ owned=BASE_OWNED.slice(); }
 let curSkin=load('gm_skin','sk0'), curPack=load('gm_pack','pk0'), curBg=load('gm_bg','bg0');
+/* drop items that no longer exist (the separate drawn pack became pk0 itself), so the
+   collection count stays right and a vanished selection falls back to the default */
+owned=owned.filter(k=>SKINS[k]||PACKS[k]||BGS[k]);
+for(const k of BASE_OWNED) if(owned.indexOf(k)<0) owned.push(k);
+if(!PACKS[curPack]) curPack='pk0';
+if(!SKINS[curSkin]) curSkin='sk0';
+if(!BGS[curBg]) curBg='bg0';
 let upg; try{ upg=JSON.parse(load('gm_upg','{}')); }catch(e){ upg={}; }
 /* --- segítség-készlet ---
    Hints and shuffles no longer refill every level. They come from one stock that
@@ -1047,8 +1063,7 @@ function buildLevel(seed,plain,diff){
    the plain, chunky shapes — no rings or lattices to decode. */
 const KID_SHAPES=['Holdkorong','Szív','Rombusz','Gúla','Teknős','Kereszt','Pajzs','Csillag','Homokóra','Kapu']
   .map(n=>SHAPES.find(s=>s.n===n)).filter(Boolean);
-const KID_SYMBOLS=['🐶','🐱','🐰','🐻','🐼','🦁','🐸','🐵','🐷','🐮','🐔','🦄',
-                   '🐙','🐢','🍎','🍌','🍓','🍉','🌈','⭐','🚗','🎈'];
+const KID_SYMBOLS=imgPack('gyerek',22);
 function buildKid(lv){
   const rnd=mulberry32((lv*2246822519)^0x2F6B1D);
   const sh=KID_SHAPES[Math.floor(rnd()*KID_SHAPES.length)];
@@ -1186,6 +1201,13 @@ function walkDeal(idx,pres,R,bag,rnd,relaxed){
 /* Each level draws its own subset of the pack. Taking the first sc icons (as it
    used to) gave every early level the very same eight symbols. Seeded apart from
    the layout, so which icons appear changes but the deal's structure does not. */
+/* A symbol is either an emoji, shown as text, or "img:<path>" for a drawn icon pack.
+   Everything that shows a symbol goes through these two, so both kinds work everywhere. */
+const isImg=s=>typeof s==='string'&&s.slice(0,4)==='img:';
+const symHTML=s=>isImg(s)?'<img src="'+s.slice(4)+'" alt="" draggable="false">':s;
+function setSym(el,s){ if(isImg(s)) el.innerHTML=symHTML(s); else el.textContent=s; }
+/* warm the cache so the first board of a drawn pack does not pop in tile by tile */
+function preloadPack(list){ for(const s of list) if(isImg(s)){ const im=new Image(); im.src=s.slice(4); } }
 function levelPool(seed,sc){
   return shf(mulberry32((seed*40503)^0x51A3C9),SYMBOLS.slice()).slice(0,sc);
 }
@@ -1272,7 +1294,7 @@ function render(){
     if(mode==='mem') d.classList.add('down');
     /* SAJÁT KÉPHEZ: d.style.backgroundImage=`url(kepek/${t.s}.png)`;
        d.style.backgroundSize='cover'; és töröld az alábbi sort. */
-    d.textContent=t.s;
+    setSym(d,t.s);
     d.addEventListener('click',()=>tap(t));
     t.el=d; board.appendChild(d);
   }
@@ -1346,7 +1368,7 @@ function renderTray(){
   let h='';
   for(let i=0;i<Math.max(TRAY,trayArr.length);i++){
     const x=trayArr[i];
-    h+='<div class="slot">'+(x?'<b'+(x.popping?' class="pop"':'')+'>'+x.s+'</b>':'')+'</div>';
+    h+='<div class="slot">'+(x?'<b'+(x.popping?' class="pop"':'')+'>'+symHTML(x.s)+'</b>':'')+'</div>';
   }
   box.innerHTML=h;
   $('tray').classList.toggle('warn',trayUsed()>=TRAY-1);
@@ -1358,7 +1380,7 @@ function flyToSlot(t,slot){
   const from=b(t.el), to=b(slot);
   const target=slot.firstChild; if(target) target.style.visibility='hidden';
   const g=document.createElement('div');
-  g.className='fly'; g.textContent=t.s;
+  g.className='fly'; setSym(g,t.s);
   g.style.cssText='left:'+from.left+'px;top:'+from.top+'px;width:'+from.width+'px;height:'+from.height+'px;font-size:'+(from.width*.62)+'px';
   document.body.appendChild(g);
   requestAnimationFrame(()=>{
@@ -1573,7 +1595,7 @@ function doShuffle(free,dry){
   if(dry) return true;
   if(!free) spendAid('shuf');
   rem.forEach(t=>{
-    t.s=out[t.i]; t.el.textContent=t.s;
+    t.s=out[t.i]; setSym(t.el,t.s);
     if(mode==='mem') t.el.classList.add('down');   /* a reshuffle hides them again */
   });
   if(sel){ sel.el.classList.remove('sel'); sel=null; }
@@ -1776,7 +1798,7 @@ function drawShop(){
       prev=`<div class="sw" style="background:${v['--t-face']};border-color:${v['--t-edge']};color:${v['--t-ink']};
             box-shadow:inset 0 1px 0 ${v['--t-gloss']},inset 0 -3px 5px ${v['--t-inner']}">🪄</div>`;
     }else if(tab==='pack'){
-      prev=`<div class="row">${it.s.slice(0,4).join(' ')}</div>`;
+      prev=`<div class="row">${it.s.slice(0,4).map(symHTML).join(' ')}</div>`;
     }else{ const v=it.v;
       prev=`<div class="bgsw" style="background:radial-gradient(ellipse at 50% 0%, ${v['--bg1']}, ${v['--bg0']} 72%)"></div>`;
     }
@@ -1839,7 +1861,7 @@ function pick(key,it,has,lock){
 function equip(key){
   if(tab==='skin'){ curSkin=key; save('gm_skin',key); }
   else if(tab==='bg'){ curBg=key; save('gm_bg',key); }
-  else{ curPack=key; save('gm_pack',key); SYMBOLS=PACKS[key].s; startLevel(level); }
+  else{ curPack=key; save('gm_pack',key); SYMBOLS=PACKS[key].s; preloadPack(SYMBOLS); startLevel(level); }
   applyStyles(); drawShop(); beep('ok');
 }
 const openShop=()=>{ drawShop(); $('veilShop').classList.add('on'); armBack(); beep('tap'); };
@@ -2444,7 +2466,7 @@ $('bSaveLoad').onclick=()=>{
 }catch(e){} })();
 
 document.addEventListener('contextmenu',e=>e.preventDefault());
-applyStyles(); setCoins(coins); syncSwitches();
+applyStyles(); setCoins(coins); syncSwitches(); preloadPack(SYMBOLS);
 
 /* ================= alkalmazásként futás ================= */
 /* offline működés — csak kiszolgálóról (https vagy localhost) indul el,
