@@ -129,11 +129,8 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   text-shadow:0 1px 0 var(--t-shadow);
   filter:brightness(calc(.90 + var(--dep)*.13));
   /* transform and opacity only: those run on the compositor. Animating filter and
-     box-shadow repainted every tile that became free, on every frame of a match.
-     z-index steps back only after the drop-back animation: a tile that sinks under
-     its neighbours while still moving makes every overlapping tile above it get its
-     own layer and repaint — on a phone that is the stutter after a deselect. */
-  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s,z-index 0s linear .14s;
+     box-shadow repainted every tile that became free, on every frame of a match. */
+  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s;
 }
 .tile::after{content:"";position:absolute;inset:3px;border-radius:4px;border:1px solid var(--t-inner);pointer-events:none}
 /* drawn icon packs: the image sits where the emoji would, at about the same size */
@@ -158,13 +155,17 @@ header{position:relative;z-index:3;padding:9px 13px 0}
              0 0 0 1px rgba(227,177,85,.34),
              inset 0 1px 0 var(--t-gloss),inset 0 -3px 5px var(--t-inner);
 }
-/* The selected tile keeps its own compositor layer for as long as it is selected,
-   so the lift does not repaint the board around it a second time when it ends.
-   Its z-index rises at once (no delay), so it is on top for the whole lift. */
-.tile.sel{transform:translateY(-4px) scale(1.06);will-change:transform;
-  transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .24s,z-index 0s;
+.tile.sel{transform:translateY(-4px) scale(1.06);
   box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 10px 18px rgba(0,0,0,.6),
              0 0 0 2px var(--candle),0 0 24px 4px rgba(227,177,85,.65);z-index:9999!important}
+/* The selection is drawn on a copy of the tile (a "ghost") that lives on its own
+   compositor layer, right over the board tile. Lifting, lighting and dropping it
+   moves only that small layer. Changing the board tile itself made the phone
+   re-rasterise every neighbouring tile — shadows, depth filters, pictures — on
+   each tap, which was the hitch you could feel. The board tile never changes. */
+.tile.ghost{pointer-events:none;opacity:0;will-change:transform,opacity;z-index:9999!important;
+  transition:transform .14s cubic-bezier(.3,1.4,.5,1)}
+.tile.ghost.on{opacity:1}
 .tile.hint{animation:hint .75s ease-in-out 3}
 @keyframes hint{0%,100%{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 6px 9px rgba(0,0,0,.55)}
   50%{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 6px 20px rgba(0,0,0,.5),0 0 0 2px #86ddbb,0 0 26px 5px rgba(134,221,187,.7)}}
@@ -317,7 +318,7 @@ body.kid .tile.blocked{filter:grayscale(.9) brightness(.45)}
 body.kid .tile:not(.blocked)::before{content:"";position:absolute;inset:-6px;border-radius:11px;pointer-events:none;
   box-shadow:0 0 16px 5px rgba(255,205,100,.75);animation:breathe 1.7s ease-in-out infinite;will-change:opacity}
 @keyframes breathe{50%{opacity:.2}}
-body.kid .tile.gone::before{display:none}
+body.kid .tile.gone::before,body.kid .tile.ghost::before{display:none}   /* the board tile under the ghost keeps breathing */
 /* every playable tile has a gold rim here, so the chosen one needs a white one */
 body.kid .tile.sel{box-shadow:0 2px 0 var(--t-lip),0 3px 0 var(--t-base),0 12px 20px rgba(0,0,0,.6),
   0 0 0 4px #fff,0 0 26px 8px rgba(255,225,130,.9)}
@@ -1305,6 +1306,37 @@ function render(){
     d.addEventListener('click',()=>tap(t));
     t.el=d; board.appendChild(d);
   }
+  makeGhosts();
+}
+/* ---- the selection, drawn on ghost tiles ----
+   Two copies, used in turn: when the selection jumps from one tile to another,
+   the old copy can still drop back while the new one pops up. */
+let ghosts=[], gIdx=0, gTimer=[0,0];
+function makeGhosts(){
+  ghosts=[0,1].map(()=>{
+    const g=document.createElement('div'); g.className='tile ghost';
+    board.appendChild(g); return g;
+  });
+  gIdx=0; gTimer.forEach(clearTimeout);
+}
+/* show the lifted, lit copy over tile t; shake jolts it instead of the plain pop */
+function selOn(t,shake){
+  gIdx^=1;
+  const g=ghosts[gIdx]; clearTimeout(gTimer[gIdx]);
+  g.style.left=t.el.style.left; g.style.top=t.el.style.top;
+  g.style.setProperty('--dep',t.el.style.getPropertyValue('--dep'));
+  setSym(g,t.s);
+  g.className='tile ghost on sel'+(shake?' shake':'');
+  if(shake) setTimeout(()=>g.classList.remove('shake'),340);
+}
+/* drop the copy back onto its tile (the glow goes at once, as it always did) and
+   hide it when it lands; instant hides it right away, e.g. when the pair vanishes */
+function selOff(instant){
+  const k=gIdx, g=ghosts[k]; if(!g) return;
+  clearTimeout(gTimer[k]);
+  g.classList.remove('sel','shake');
+  if(instant) g.classList.remove('on');
+  else gTimer[k]=setTimeout(()=>g.classList.remove('on'),150);
 }
 function refresh(){
   let n=0;
@@ -1330,27 +1362,28 @@ function tap(t){
     /* tapping the chosen tile again takes it together with its twin beneath */
     const tw=twinOf(t);
     if(tw){ takePair(t,tw); return; }
-    t.el.classList.remove('sel'); if(mem) t.el.classList.add('down');
+    /* in Memória the face goes down at once, so the face-up copy must not linger */
+    selOff(mem); if(mem) t.el.classList.add('down');
     sel=null; markTwin(); beep('tap'); return;
   }
   if(mem) t.el.classList.remove('down');    /* turn it face up */
-  if(!sel){ sel=t; t.el.classList.add('sel'); markTwin(); beep('tap'); startClock(); return; }
+  if(!sel){ sel=t; selOn(t); markTwin(); beep('tap'); startClock(); return; }
   if(sel.s===t.s){
     takePair(sel,t);
   }else if(mem){
     /* show both for a moment, then turn them back down */
     const a=sel; sel=null; memLock=true; markTwin();
-    a.el.classList.remove('sel'); jolt(t); beep('no');
+    selOff(); jolt(t); beep('no');
     setTimeout(()=>{
       a.el.classList.add('down'); t.el.classList.add('down'); memLock=false;
     },850);
   }else{
-    sel.el.classList.remove('sel'); jolt(t);
-    sel=t; t.el.classList.add('sel'); markTwin(); beep('tap');
+    selOff();
+    sel=t; selOn(t,true); markTwin(); beep('tap');
   }
 }
 function takePair(a,b){
-  a.el.classList.remove('sel'); b.el.classList.remove('sel');
+  selOff(true);
   sel=null; markTwin();
   present[a.i]=present[b.i]=false;
   if(mode==='mem'){ a.el.classList.remove('down'); b.el.classList.remove('down'); }
@@ -1605,7 +1638,7 @@ function doShuffle(free,dry){
     t.s=out[t.i]; setSym(t.el,t.s);
     if(mode==='mem') t.el.classList.add('down');   /* a reshuffle hides them again */
   });
-  if(sel){ sel.el.classList.remove('sel'); sel=null; }
+  if(sel){ selOff(true); sel=null; }
   markTwin(); memLock=false; refresh();
   return true;
 }
