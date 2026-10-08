@@ -37,9 +37,12 @@ body{
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   transition:background .6s ease;
 }
-/* csillagpor */
+/* csillagpor
+   absolute, not fixed: the page never scrolls, so it sits in the same place, but a
+   fixed layer made Chrome lift it and then the whole #stage (which overlaps it)
+   onto two screen-sized layers of their own, ~10 MB of GPU memory each on a phone */
 body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background-image:
     radial-gradient(1.4px 1.4px at 11% 19%, rgba(236,226,202,.45), transparent),
     radial-gradient(1px 1px at 71% 12%, rgba(236,226,202,.35), transparent),
@@ -103,6 +106,17 @@ header{position:relative;z-index:3;padding:9px 13px 0}
   background:radial-gradient(ellipse at center, rgba(227,177,85,.13), transparent 68%);
 }
 #board{position:absolute;top:0;left:0;transform-origin:0 0}
+/* The tiers and the overlay (see render) are zero-size frames at the board's origin,
+   so the tiles keep their board coordinates. Each one is its own stacking context:
+   the tiles' z-index only orders them inside their tier, and the overlay stays on top. */
+.tier,.fx{position:absolute;left:0;top:0;isolation:isolate}
+/* A tier is its own compositor layer. translateZ, not will-change: a will-change
+   layer keeps the resolution it was first drawn at, so zoomed-in tiles would blur. */
+.tier.own{transform:translateZ(0)}
+/* see render(): it has to paint to count, so one pixel in its corner is drawn at
+   1/255 alpha, which nobody can see; the rest of it is empty and costs no memory */
+.keel{position:absolute;pointer-events:none;
+  background:linear-gradient(rgba(0,0,0,.004),rgba(0,0,0,.004)) 0 0/1px 1px no-repeat}
 /* Only while a pinch or drag is running: promote the board to its own layer and
    stop the per-tile transitions, so zooming moves a ready-made texture instead of
    repainting 200 tiles with their shadows and filters every frame. */
@@ -172,6 +186,15 @@ header{position:relative;z-index:3;padding:9px 13px 0}
 .tile.gone{transform:scale(.25) rotate(14deg);opacity:0;pointer-events:none;will-change:transform,opacity}
 .tile.shake{animation:shake .34s}
 @keyframes shake{0%,100%{transform:translateX(0)}22%{transform:translateX(-4px)}66%{transform:translateX(4px)}}
+/* A blocked board tile makes the same move without a transform animation (see jolt).
+   That would lift it onto a layer of its own in the middle of its tier, and the tiles
+   painted after it would be split off onto another: the tier rasterised twice for one
+   wrong tap. Animating a registered length instead runs on the main thread, so the
+   tile stays in its tier's paint and only its own spot is repainted; fed through
+   translate, it moves by fractions of a pixel as the shake did and needs no layout. */
+@property --nx{syntax:'<length>';inherits:false;initial-value:0px}
+.tile.nudge{animation:nudge .34s;translate:var(--nx) 0}
+@keyframes nudge{0%,100%{--nx:0px}22%{--nx:-4px}66%{--nx:4px}}
 /* eltűnő pár szikrája */
 .spark{position:absolute;width:40px;height:52px;pointer-events:none;z-index:8000;
   background:radial-gradient(circle at 50% 50%, rgba(255,242,208,.95), rgba(227,177,85,.45) 36%, transparent 66%);
@@ -285,21 +308,36 @@ footer{position:relative;z-index:3;display:flex;gap:6px;padding:9px 11px calc(9p
 .switch .st{font-size:12px;color:var(--ivory-dim);font-family:"Crimson Pro",serif;font-style:italic}
 .switch.on{border-color:var(--hair);background:rgba(227,177,85,.08)}
 /* ================= hármas mód: tálca ================= */
-#tray{display:none;position:relative;z-index:3;padding:6px 11px 0}
+/* Painted after the footer (z-index 4). The slot tiles are layers of their own, and
+   the compositor has to lift anything painted after a layer it overlaps: the footer,
+   which the tiles' shadows and the warning glow just reach, went onto a layer of its
+   own with the first tile on the tray and back with the last, and the screen-sized
+   layer above the board was redrawn both times. Tray and footer only meet in the
+   faint tail of the warning glow. */
+#tray{display:none;position:relative;z-index:4;padding:6px 11px 0}
 body.tray #tray{display:block}
 /* one row whatever the count: a triple still popping plus a fresh pick can briefly
    make eight to ten, and those squeeze in for a moment instead of wrapping */
-#tray .slots{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:6px;border-radius:12px;
+#tray .slots{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:6px;border-radius:12px;
   border:1px solid var(--hair);background:linear-gradient(180deg,rgba(4,7,13,.78),rgba(4,7,13,.55));
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.55);transition:border-color .2s,box-shadow .2s}
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.55)}
 #tray .slot{aspect-ratio:40/52;border-radius:6px;border:1px dashed rgba(236,226,202,.13)}
 #tray .slot b{width:100%;height:100%;display:grid;place-items:center;border-radius:6px;
   font-size:22px;font-weight:400;line-height:1;color:var(--t-ink);
   background:var(--t-face);border:1px solid var(--t-edge);box-shadow:0 2px 0 var(--t-lip),0 3px 5px rgba(0,0,0,.45)}
+/* Every slot tile is its own small layer (~0.15 MB): a new pick rasterises just
+   that tile, and the pop animation never splits the tray into fresh layers. Drawn
+   above all slot frames (z-index), so no frame has to be layered over a tile;
+   translateZ rather than will-change, which would snap the tile to whole pixels. */
+#tray .slot b{transform:translateZ(0);position:relative;z-index:1}
 #tray .slot b.pop{animation:slotpop .26s ease-in forwards}
 @keyframes slotpop{40%{transform:scale(1.18)}100%{transform:scale(.2);opacity:0}}
-/* one free slot left: the tray warns in red */
-#tray.warn .slots{border-color:#d4553d;box-shadow:inset 0 2px 8px rgba(0,0,0,.55),0 0 14px rgba(212,85,61,.5)}
+/* one free slot left: the tray warns in red. The red rim and glow are an overlay
+   that fades in and out by opacity, on the compositor; fading the border colour and
+   the shadow of the tray itself repainted the whole tray on every frame. */
+#tray .slots::after{content:"";position:absolute;inset:-1px;border-radius:12px;pointer-events:none;
+  border:1px solid #d4553d;box-shadow:0 0 14px rgba(212,85,61,.5);opacity:0;transition:opacity .2s}
+#tray.warn .slots::after{opacity:1}
 /* the picked tile flies from the board into its slot */
 .fly{position:fixed;z-index:80;display:grid;place-items:center;border-radius:7px;line-height:1;pointer-events:none;
   color:var(--t-ink);background:var(--t-face);border:1px solid var(--t-edge);
@@ -1295,10 +1333,57 @@ function startLevel(n,depth){
   twinLit=null;
   render(); fit(); refresh(); resetClock();
 }
+/* The board is built in layers that Chrome composites separately:
+   - tiers: the stack levels, dealt bottom up into at most TIERS boxes. When a tile
+     goes or turns playable, Chrome repaints that spot from the tiles of its own
+     tier only, instead of from every level piled up there — on a nine-level board
+     that was most of the cost of a match. A tier costs GPU memory like the board
+     layer did (a screenful at most, as the stage clips it), so the count is capped
+     at three: at fit, the two extra are paid for by the two screen-sized layers
+     the star dust no longer forces (see body::before). Zoomed in on a deep board,
+     each tier also gets the margin Chrome draws ahead around the screen: about
+     16 MB of tiles against 11.5 on level 231 at full zoom, well within budget.
+   - fx: the overlay for the selection ghosts and the sparks, above every tile.
+     Nothing animates on the compositor inside a tier of its own, save the rare
+     jolt that costs less that way (see jolt; vanishing copies go between tiers,
+     see vanish): an animation in the middle of a layer's paint makes Chrome split
+     the tiles around it into fresh layers and rasterise them all again. */
+const TIERS=3;
+let fx=null;
 function render(){
   board.innerHTML='';
   const order=[...tiles].sort((a,b)=>a.l-b.l||a.y-b.y||a.x-b.x);
   const top=Math.max(1,...tiles.map(t=>t.l));
+  const dep=t=>+(t.l/top).toFixed(3);
+  /* Kid boards are small and cheap, and their tiles change shadow as they turn
+     playable: they keep the single plain board layer they always had. */
+  const kid=mode==='kid', nt=kid?1:Math.min(TIERS,top+1), tierOf=l=>Math.floor(l*nt/(top+1));
+  /* The box Chrome bounds the board's paint with: every tile plus the reach of its
+     drop shadow, which Chrome takes as 3 sigma of the blur (sigma = blur/2) rounded
+     up, less the shadow's offset — see the .tile box-shadow. */
+  let x0=1e9, y0=1e9, x1=-1e9, y1=-1e9;
+  for(const t of order){
+    const d=dep(t), r=Math.ceil(1.5*(9+10*d)), dy=5+7*d, x=t.x*40+t.l*LX, y=t.y*52-t.l*LY;
+    x0=Math.min(x0,x-r); y0=Math.min(y0,y-r+dy); x1=Math.max(x1,x+40+r); y1=Math.max(y1,y+52+r+dy);
+  }
+  const boxes=[];
+  for(let i=0;i<nt;i++){
+    const b=document.createElement('div'); b.className='tier'; board.appendChild(b); boxes.push(b);
+    if(kid||!order.some(t=>tierOf(t.l)===i)) continue;
+    /* Chrome keys a composited layer to the first thing painted in it, and places
+       it by the box around all of its paint. When that first thing was a tile, or
+       an edge tile went and the box shrank, the layer was rebuilt or shifted and
+       rasterised again from scratch. The keel is painted first and spans that box,
+       with room on the far sides for the hint and twin glows (see keelRoom), so
+       neither changes. Every tier gets the same one: the tiers then sit on the very
+       pixel grid the single board layer had, and look exactly the same. */
+    b.classList.add('own');
+    const k=document.createElement('div'); k.className='keel';
+    Object.assign(k.dataset,{x:x0,y:y0,w:x1+32-x0,h:y1+32-y0,n:0});
+    k.style.cssText='left:'+x0+'px;top:'+y0+'px;width:'+(x1+32-x0)+'px;height:'+(y1+32-y0)+'px';
+    b.appendChild(k);
+  }
+  fx=document.createElement('div'); fx.className='fx'; board.appendChild(fx);
   for(const t of order){
     const d=document.createElement('div');
     d.className='tile';
@@ -1311,7 +1396,7 @@ function render(){
        d.style.backgroundSize='cover'; és töröld az alábbi sort. */
     setSym(d,t.s);
     d.addEventListener('click',()=>tap(t));
-    t.el=d; board.appendChild(d);
+    t.el=d; boxes[tierOf(t.l)].appendChild(d);
   }
   makeGhosts();
 }
@@ -1322,7 +1407,7 @@ let ghosts=[], gIdx=0, gTimer=[0,0];
 function makeGhosts(){
   ghosts=[0,1].map(()=>{
     const g=document.createElement('div'); g.className='tile ghost';
-    board.appendChild(g); return g;
+    fx.appendChild(g); return g;
   });
   gIdx=0; gTimer.forEach(clearTimeout);
 }
@@ -1352,11 +1437,59 @@ function refresh(){
   $('uiSub').textContent = n+' csempe hátravan · '+total+'-ból';
   $('uiTrack').style.transform='scaleX('+((total-n)/total).toFixed(4)+')';
 }
-function jolt(t){ t.el.classList.add('shake'); setTimeout(()=>t.el.classList.remove('shake'),340); }
+/* A board tile jolts by the nudge, the selection copy keeps its shake (see .nudge).
+   The plain shake stays where the nudge would cost more: on a kid board, one plain
+   layer with no tier to split, and on a tile whose paint the nudge would push past
+   its keel on the left (see render), which would shift the tier and rasterise all
+   of it again on every frame of the move. */
+function jolt(t){
+  const e=t.el, k=e.parentNode.firstElementChild;
+  /* how far its paint reaches left: the twin glow, else the drop shadow */
+  const r=e.classList.contains('reach')?30:Math.ceil(1.5*(9+10*parseFloat(e.style.getPropertyValue('--dep'))));
+  const c=k.className!=='keel'||parseFloat(e.style.left)-r-4<parseFloat(k.style.left)?'shake':'nudge';
+  e.classList.add(c); setTimeout(()=>e.classList.remove(c),340);
+}
 function sparkle(t){
   const s=document.createElement('div'); s.className='spark';
   s.style.left=t.el.style.left; s.style.top=t.el.style.top; s.style.zIndex=9500;
-  board.appendChild(s); setTimeout(()=>s.remove(),560);
+  fx.appendChild(s); setTimeout(()=>s.remove(),560);
+}
+/* A matched or picked tile shrinks away on a copy, and the board tile goes at once.
+   Animating the board tile itself made it a composited layer in the middle of the
+   stack: Chrome split the board into new layers around it, rasterised them from
+   scratch, and merged them back when the tile went — twice the whole board per
+   match. Hiding a tile only repaints the spot it covered. The copy goes right
+   after its own tier, among copies in stacking order, so the tiers above still
+   cover its edges as they covered the tile; being between two layers that exist
+   anyway, it splits nothing. In its first frame, still at rest, it is drawn over
+   the tiles of its own tier stacked after it: its shadow and lip on the row below,
+   its edge over a neighbour's overlapping edge, and without the shadows they cast
+   on it. One frame, under the sparks; handing over a frame later fixes it, but
+   costs every match a second style and layer update. */
+function vanish(t){
+  const g=t.el.cloneNode(true), z=+t.el.style.zIndex, tier=t.el.parentNode;
+  g.classList.add('gone'); g.dataset.z=z;
+  /* A copy would start the hint glow over: it picks it up where the tile had got to.
+     One that has already run out is not shown again. */
+  if(g.classList.contains('hint')){
+    const h=t.el.getAnimations().find(a=>a.animationName==='hint');
+    if(h) g.style.animationDelay=-h.currentTime+'ms'; else g.classList.remove('hint');
+  }
+  if(tier.classList.contains('own')){
+    g.style.zIndex='';
+    let n=tier.nextElementSibling;
+    while(n.classList.contains('gone')&&+n.dataset.z<z) n=n.nextElementSibling;
+    board.insertBefore(g,n);
+  }else{
+    /* a kid board is one plain layer with nothing to split: the copy keeps the
+       tile's place and z-index, so the tiles stacked over it still cover it */
+    t.el.after(g);
+  }
+  /* the same curves the board tile used to run as a transition */
+  g.animate({transform:['none','scale(.25) rotate(14deg)']},{duration:140,easing:'cubic-bezier(.3,1.4,.5,1)'});
+  g.animate({opacity:[1,0]},{duration:240,easing:'ease'});
+  setTimeout(()=>g.remove(),300);
+  t.el.style.display='none';
 }
 function tap(t){
   ensureAudio();
@@ -1395,45 +1528,57 @@ function takePair(a,b){
   present[a.i]=present[b.i]=false;
   if(mode==='mem'){ a.el.classList.remove('down'); b.el.classList.remove('down'); }
   sparkle(a); sparkle(b);
-  a.el.classList.add('gone'); b.el.classList.add('gone');
+  vanish(a); vanish(b);
   beep('ok');
   /* Light up the freed tiles at once — the old 170ms wait read as lag. Only the
      end-of-level check waits, so the last pair still gets to vanish on screen. */
   refresh();
   setTimeout(check,200);
-  /* once the vanish animation is over, drop the tiles from painting altogether;
-     nothing brings a removed tile back (no undo, reshuffles touch only live ones) */
-  setTimeout(()=>{ a.el.style.display='none'; b.el.style.display='none'; },300);
 }
 /* ---------------- Hármas mód: a tálca ---------------- */
 const TRAY=7;
 let trayArr=[], trayLock=false;
 /* tiles already matched but still playing their pop animation take no room */
 const trayUsed=()=>trayArr.filter(x=>!x.popping).length;
+/* Slots are updated in place: a slot gets a new tile only when its symbol changed,
+   and a pop is a class on the tile already there. Each slot tile being a layer of its
+   own (see #tray .slot b), nothing else is drawn again; rebuilding the row repainted
+   every slot and the tray's shaded frame, three times per completed triple. The slots
+   themselves stay put as well: moving them along repainted the frame behind them.
+   A pick during a pop no longer restarts it: the rebuild did that, by accident. */
+const traySlots=$('traySlots');
 function renderTray(){
-  const box=$('traySlots'); if(!box) return;
-  let h='';
-  for(let i=0;i<Math.max(TRAY,trayArr.length);i++){
-    const x=trayArr[i];
-    h+='<div class="slot">'+(x?'<b'+(x.popping?' class="pop"':'')+'>'+symHTML(x.s)+'</b>':'')+'</div>';
+  const n=Math.max(TRAY,trayArr.length);
+  while(traySlots.children.length<n){ const d=document.createElement('div'); d.className='slot'; traySlots.appendChild(d); }
+  while(traySlots.children.length>n) traySlots.lastChild.remove();
+  for(let i=0;i<n;i++){
+    const x=trayArr[i], slot=traySlots.children[i], k=x?x.s:'';
+    if(slot.dataset.k!==k){ slot.dataset.k=k; slot.innerHTML=x?'<b>'+symHTML(x.s)+'</b>':''; }
+    if(x) slot.firstChild.classList.toggle('pop',!!x.popping);
   }
-  box.innerHTML=h;
   $('tray').classList.toggle('warn',trayUsed()>=TRAY-1);
 }
-/* a ghost copy flies from the board to the slot; the slot tile shows when it lands */
+/* A ghost copy flies from the board to the slot; the slot tile shows when it lands.
+   Nothing here reads the layout, which the pick has just changed: a read would lay
+   out the page then and there, in the middle of the tap, and again for the frame. */
 function flyToSlot(t,slot){
-  if(!slot) return;
-  const b=box=>box.getBoundingClientRect();
-  const from=b(t.el), to=b(slot);
-  const target=slot.firstChild; if(target) target.style.visibility='hidden';
+  const from=tileRect(t), slots=traySlots.children;
+  /* slot boxes measured at the touch hold while the slot count is the same (a pick
+     while a triple pops can squeeze in an eighth) */
+  const known=slotBox.length===slots.length?slotBox[[...slots].indexOf(slot)]:null;
+  const target=slot.firstChild; target.style.visibility='hidden';
   const g=document.createElement('div');
   g.className='fly'; setSym(g,t.s);
   g.style.cssText='left:'+from.left+'px;top:'+from.top+'px;width:'+from.width+'px;height:'+from.height+'px;font-size:'+(from.width*.62)+'px';
   document.body.appendChild(g);
   requestAnimationFrame(()=>{
+    /* otherwise read it here, at the start of the frame that lays the tray out anyway,
+       from the slot the tile is in now: a popped triple cleared since the pick may
+       have moved it along and dropped the slot it went to */
+    const to=known||(traySlots.children[trayArr.indexOf(t)]||slot).getBoundingClientRect();
     g.style.transform='translate('+(to.left-from.left)+'px,'+(to.top-from.top)+'px) scale('+(to.width/from.width)+')';
   });
-  setTimeout(()=>{ g.remove(); if(target) target.style.visibility=''; },230);
+  setTimeout(()=>{ g.remove(); target.style.visibility=''; },230);
 }
 function trayPick(t){
   if(trayLock) return;
@@ -1443,9 +1588,8 @@ function trayPick(t){
   if(at<0) trayArr.push(t); else trayArr.splice(at+1,0,t);
   present[t.i]=false;
   renderTray();
-  flyToSlot(t,$('traySlots').children[trayArr.indexOf(t)]);
-  t.el.classList.add('gone');
-  setTimeout(()=>{ t.el.style.display='none'; },300);
+  flyToSlot(t,traySlots.children[trayArr.indexOf(t)]);
+  vanish(t);
   refresh(); beep('tap');
   const same=trayArr.filter(x=>x.s===t.s&&!x.popping);
   if(same.length>=3){
@@ -1505,7 +1649,7 @@ function trayDeal(){
 /* Mentőöv in Hármas: the last three tiles on the tray go back where they came from */
 function trayGiveBack(){
   const back=trayArr.filter(x=>!x.popping).slice(-3);
-  for(const x of back){ present[x.i]=true; x.el.style.display=''; x.el.classList.remove('gone'); }
+  for(const x of back){ present[x.i]=true; x.el.style.display=''; }
   trayArr=trayArr.filter(x=>back.indexOf(x)<0);
   trayLock=false; renderTray(); refresh();
   return back.length>0;
@@ -1520,11 +1664,24 @@ function twinOf(t){
    so without a cue nobody would think of tapping the top one again. */
 let twinLit=null;
 function markTwin(){
-  if(twinLit){ twinLit.el.classList.remove('reach'); twinLit=null; }
+  if(twinLit){ twinLit.el.classList.remove('reach'); keelRoom(twinLit,30,false); twinLit=null; }
   if(!sel||mode==='mem') return;
   const tw=twinOf(sel); if(!tw) return;
-  tw.el.classList.add('reach'); twinLit=tw;
+  tw.el.classList.add('reach'); keelRoom(tw,30,true); twinLit=tw;
   twinTip();
+}
+/* The glows reach further than the shadows the keels are sized for (see render):
+   the twin's 30px, a hint's pulse 44px. Where one would cross the keel at the top
+   or left, the tier would shift and be rasterised again — on every frame of a
+   pulsing hint. Its keel steps out while such a glow is on, so the tier is
+   repainted once when the glow starts and once when it ends. */
+function keelRoom(t,reach,on){
+  const k=t.el.parentNode.firstElementChild, b=k&&k.dataset;
+  if(!b||k.className!=='keel') return;
+  if(parseFloat(t.el.style.left)-reach>=+b.x&&parseFloat(t.el.style.top)-reach>=+b.y) return;
+  b.n=+b.n+(on?1:-1);
+  const o=b.n>0?32:0;
+  k.style.cssText='left:'+(b.x-o)+'px;top:'+(b.y-o)+'px;width:'+(+b.w+o)+'px;height:'+(+b.h+o)+'px';
 }
 function twinTip(force){
   const n=parseInt(load('gm_twintip','0'),10)||0;
@@ -1605,10 +1762,10 @@ $('bHint').onclick=()=>{
   spendAid('hint');
   if(mode!=='tray'&&isTwinMove(m)) twinTip(true);
   m.forEach(t=>{
-    t.el.classList.add('hint');
+    t.el.classList.add('hint'); keelRoom(t,44,true);
     if(mode==='mem') t.el.classList.remove('down');
     setTimeout(()=>{
-      t.el.classList.remove('hint');
+      t.el.classList.remove('hint'); keelRoom(t,44,false);
       if(mode==='mem'&&sel!==t) t.el.classList.add('down');
     },2300);
   });
@@ -2220,14 +2377,23 @@ addEventListener('popstate',()=>{ backArmed=false; if(backStep()) armBack(); });
    The wide layouts squeeze tiles down to ~16px on a phone, so pinch-zoom and
    drag are not a luxury here. */
 const MAXZ=3.4;
-let vBase={tx:0,ty:0,s:1,W:1,H:1}, vNow={tx:0,ty:0,s:1};
+let vBase={tx:0,ty:0,s:1,W:1,H:1}, vNow={tx:0,ty:0,s:1}, vDraw={tx:0,ty:0,s:1};
 /* Stage metrics are cached. Reading clientWidth or getBoundingClientRect inside
    a pointermove handler forces a synchronous layout on every single event, which
    is what made pinching stutter on a board of 200 tiles. */
-let SW=1,SH=1,SL=0,ST=0;
+let SW=1,SH=1,SL=0,ST=0,slotBox=[];
 function measureStage(){
   const r=stage.getBoundingClientRect();
   SW=r.width||1; SH=r.height||1; SL=r.left; ST=r.top;
+  /* the tray slots too, while nothing is pending: a pick then knows where its tile
+     flies without forcing a layout in the middle of its DOM changes */
+  slotBox=mode==='tray'?[...traySlots.children].map(s=>s.getBoundingClientRect()):[];
+}
+/* tile t's box on screen, from the view as last written instead of from the layout */
+function tileRect(t){
+  const s=vDraw.s;
+  return {left:SL+vDraw.tx+parseFloat(t.el.style.left)*s, top:ST+vDraw.ty+parseFloat(t.el.style.top)*s,
+          width:40*s, height:52*s};
 }
 function fit(keepZoom){
   if(!tiles.length) return;
@@ -2256,7 +2422,9 @@ function clampView(){
 let viewRaf=0;
 function writeView(){
   viewRaf=0;
-  board.style.transform='translate3d('+vNow.tx.toFixed(2)+'px,'+vNow.ty.toFixed(2)+'px,0) scale('+vNow.s.toFixed(4)+')';
+  const tx=vNow.tx.toFixed(2), ty=vNow.ty.toFixed(2), s=vNow.s.toFixed(4);
+  vDraw={tx:+tx,ty:+ty,s:+s};   /* what is on screen, for tileRect */
+  board.style.transform='translate3d('+tx+'px,'+ty+'px,0) scale('+s+')';
 }
 function applyView(now){
   if(now){ if(viewRaf) cancelAnimationFrame(viewRaf); writeView(); return; }
