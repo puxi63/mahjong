@@ -1,7 +1,7 @@
 /* Gyertyafény Mahjong — offline cache.
    Bump the version when index.html changes: the phone then surely loads the new
    one on its next start. */
-const CACHE = 'gyertyafeny-v18';
+const CACHE = 'gyertyafeny-v19';
 
 /* Google Fonts live in a cache of their own, which a version bump does not wipe: the
    page links the same stylesheet URLs release after release, and an update that threw

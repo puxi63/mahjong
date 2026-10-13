@@ -12,15 +12,20 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Gyertyafény Mahjong</title>
+<!-- The page's own words are Hungarian, and a slow phone paints them before the script at
+     its end has run: a page that will be in another language (gm_lang, or for a new install
+     the phone's, as the script decides) keeps the menu unseen until applyStatic has written
+     its words (html.pend). -->
+<script>try{const l=localStorage.getItem('gm_lang');if(l?l!=='hu':![...(navigator.languages||[]),navigator.language||''].some(x=>/^hu\b/i.test(x)))document.documentElement.classList.add('pend')}catch(e){}</script>
 <!-- Type: Alegreya Sans for every label and number, Almendra for names, Alegreya Italic for
-     flavour lines, Cinzel Decorative only for the logo and "Kirakva" (subset to those letters,
-     one file of a few KB). The stylesheets are fetched in CORS mode so the service worker can
-     keep real (non-opaque) copies of them for offline starts; sw.js precaches every
-     fonts.googleapis.com link it finds in this file. -->
+     flavour lines, Cinzel Decorative only for the logo and the won letter's title, "Kirakva"
+     or "Cleared" (subset to those letters, one file of a few KB). The stylesheets are fetched
+     in CORS mode so the service worker can keep real (non-opaque) copies of them for offline
+     starts; sw.js precaches every fonts.googleapis.com link it finds in this file. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@300;400;500&family=Alegreya:ital,wght@1,400&family=Almendra:wght@700&display=swap" rel="stylesheet" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&text=GYERTYAF%C3%89NKIRAKVgyertyaf%C3%A9nkirakv&display=swap" rel="stylesheet" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&text=GYERTYAF%C3%89NKIRAKVCLDgyertyaf%C3%A9nkirakvcld&display=swap" rel="stylesheet" crossorigin>
 <style>
 /* Holdfényes torony: a moonlit tower room. Moonlight silver for text, one warm candle that
    only ever means "selected", a cool moonlight ring for Jóslat, and a metal accent (gold by
@@ -120,6 +125,8 @@ body{
 /* The home screen is drawn over the same scene: the game's own chrome steps aside
    (visibility keeps its layout, so the stage is measured the same either way). */
 body.home>header,body.home>#stage,body.home>#tray,body.home>footer{visibility:hidden}
+/* the menu waits for its words in another language (see the script in head) */
+html.pend #veilStart>.homewrap{visibility:hidden}
 
 /* ================= jelenet: a torony ablaka ================= */
 /* The tower wall, a pointed window and the place seen through it: ONE static SVG
@@ -500,7 +507,8 @@ body.won #uiTip{transform:translateX(100%)!important}
 .ink{position:relative;padding:44px 24px 12px;text-align:center;color:var(--ink)}
 .ink .over{font-size:13px;font-weight:500;letter-spacing:.14em;font-variant-caps:all-small-caps;color:var(--ink-2)}
 .ink h2{margin:3px 0 0;font-family:var(--book);font-weight:700;font-size:30px;line-height:1.05;color:var(--ink)}
-/* the engraved display face is kept for the one big moment ("Kirakva"); finish() sets .deco */
+/* the engraved display face is kept for the one big moment ("Kirakva", "Cleared"); renderEnd
+   sets .deco by the title's key */
 .ink h2.deco{font-family:var(--deco);font-size:36px;line-height:1;letter-spacing:.01em}
 .time{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 11px;margin-top:11px}
 .time b{font-weight:300;font-size:29px;line-height:1.1;letter-spacing:.01em;font-variant-numeric:lining-nums tabular-nums;color:var(--ink)}
@@ -522,6 +530,8 @@ body.won #uiTip{transform:translateX(100%)!important}
 .gains .ic svg{display:block;width:20px;height:20px}
 .gains b{min-width:80px;font-weight:500;font-size:16px;color:var(--ink);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
 .gains span{flex:1;text-align:right;font-size:12.5px;line-height:1.3;color:var(--ink-2)}
+/* a part of the line ("20 for a first clear") wraps as a whole while it fits (renderEnd) */
+.gains span i{display:inline-block;font-style:normal}
 /* the button is pressed from the same wax as the seal, so it belongs to the letter (and
    shows the theme colour) instead of being a second, colder light panel */
 .wax{flex:none;display:flex;align-items:center;justify-content:center;gap:10px;height:52px;margin:26px 34px 0;padding:0 14px;
@@ -694,10 +704,11 @@ body.won #uiTip{transform:translateX(100%)!important}
 .pips{display:flex;gap:5px;margin-top:6px}
 .pips i{width:6px;height:6px;transform:rotate(45deg);border:1px solid var(--hair)}
 .pips i.on{background:var(--accent);border-color:var(--accent)}
-/* Beállítások: one frost card, a row per setting, hairlines between. A sound setting
-   is a toggle (a track with a knob in the theme's metal when on); the save row opens a
-   drawer (a chevron that turns). The word (be / ki, nyit / zár) stays in the element for
-   screen readers and is drawn as the toggle. */
+/* Beállítások: frost cards under the page's headings, a row per setting, hairlines
+   between. A sound setting is a toggle (a track with a knob in the theme's metal when on);
+   the save row opens a drawer (a chevron that turns), the rules row another page (a
+   chevron). The word (be / ki, nyit / zár) stays in the element for screen readers and is
+   drawn as the toggle. */
 .prefs{border-radius:14px;background:var(--frost);border:1px solid var(--frost-line);box-shadow:inset 0 1px 0 var(--frost-hi);overflow:hidden}
 .switch{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 14px;cursor:pointer;
   font-size:14.5px;color:var(--silver)}
@@ -709,10 +720,20 @@ body.won #uiTip{transform:translateX(100%)!important}
   background:var(--silver-faint);transition:transform .18s cubic-bezier(.3,1.3,.5,1)}
 .switch.on .st{border-color:var(--hair);background:var(--wax-tint)}
 .switch.on .st::after{background:var(--accent);transform:translateX(18px)}
-#swSave .st{width:22px;border:0;background:none}
-#swSave .st::after{left:5px;top:6px;width:7px;height:7px;border-radius:0;background:none;
+button.switch{width:100%;border:0;background:none;text-align:left}
+.switch.more .st{width:22px;border:0;background:none}
+.switch.more .st::after{left:5px;top:6px;width:7px;height:7px;border-radius:0;background:none;
   border:solid var(--silver-dim);border-width:0 1.5px 1.5px 0;transform:rotate(-45deg)}
-#swSave.on .st::after{border-color:var(--accent);transform:translate(0,-2px) rotate(45deg)}
+.switch.more.on .st::after{border-color:var(--accent);transform:translate(0,-2px) rotate(45deg)}
+/* a newcomer's way to the rules is lit, as the menu's link to them was */
+.switch.hot>span:first-child{color:var(--accent)}
+/* the language: the Tár's segmented control, a segment per language, each reaching 44 px */
+.seg.langs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr;margin-top:0}
+.seg.langs button{position:relative}
+.seg.langs button::before{content:"";position:absolute;left:0;right:0;top:-4px;bottom:-4px}
+/* the reset, set apart at the foot: a quiet button in the tray's warning red */
+.act.danger{margin-top:30px;color:#ec8c78;border-color:rgba(212,85,61,.42)}
+.act.danger:active{background:rgba(212,85,61,.1)}
 /* ================= hármas mód: tálca ================= */
 /* Painted after the footer (z-index 4). The slot tiles are layers of their own, and
    the compositor has to lift anything painted after a layer it overlaps: the footer,
@@ -813,6 +834,20 @@ body.kid .hstars i{width:15px;height:15px}
 .corner.r svg{width:16px;height:16px}
 .corner b{font-weight:500}
 .corner small{font-size:12px;letter-spacing:.04em;color:var(--silver-dim)}
+/* The settings: a round plaque on the arch's keystone, between the corners. Beside either
+   one it would run into the window frame, and move with every digit they grow. Opaque,
+   with a hairline in the theme's metal like the frame's own lines, and a 3 px ring of
+   wall colour that parts it from them; the finial dot goes under it. The hit area reaches
+   44 px (::before). A newcomer finds the candle dot of the rooms on it (see .hot). */
+.gear{position:absolute;top:calc(16px + env(safe-area-inset-top));left:50%;z-index:1;width:30px;height:30px;margin-left:-15px;padding:0;
+  border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--silver-2);
+  background:#0d1425;border:1px solid var(--hair);box-shadow:inset 0 1px 0 var(--frost-hi),0 0 0 3px var(--wall-1)}
+.gear::before{content:"";position:absolute;inset:-8px}
+.gear svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.gear:active{background:#1a2338}
+.gear .dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--candle);
+  box-shadow:0 0 0 2px var(--wall-1);display:none}
+.gear.hot .dot{display:block}
 /* the window: from the top to the sill. The title sits in the upper sky under the moon,
    where the arch is already wide enough for it; the castle and the lake get the room
    below. min-height: what a 360x640 screen leaves it (the menu must not scroll); a
@@ -842,7 +877,8 @@ body.kid .hstars i{width:15px;height:15px}
 .fan i:nth-child(2){left:31px;transform:rotate(8deg)}
 .fan i:nth-child(3){left:16px;top:0;z-index:1;background:var(--t-f3)}
 .cinfo{flex:1;min-width:0}
-.pcard .over{padding-right:52px;font-size:13px;font-weight:500;letter-spacing:.1em;font-variant-caps:all-small-caps;color:var(--accent);
+/* a px line-height: fitOver may set a long rank smaller, and the card keeps its height */
+.pcard .over{padding-right:52px;font-size:13px;line-height:16px;font-weight:500;letter-spacing:.1em;font-variant-caps:all-small-caps;color:var(--accent);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cinfo h2{margin:2px 0 0;font-family:var(--book);font-weight:700;font-size:28px;line-height:1;color:var(--silver)}
 /* Almendra has no lining figures: the number is set in the UI face */
@@ -895,16 +931,29 @@ body.kid .hstars i{width:15px;height:15px}
   box-shadow:0 0 0 2px var(--wall-1);display:none}
 .rooms .hot .dot{display:block}
 .rooms button:active .ring{background:var(--wax-tint)}
-.hlinks{display:flex;justify-content:center;align-items:center;color:var(--silver-faint)}
-/* a 33 px target that takes 29 px of the column: the window gets the rest */
-.linkbtn{padding:8px 12px;margin:-2px 0;background:none;border:0;cursor:pointer;
-  font-size:13.5px;letter-spacing:.1em;font-variant-caps:all-small-caps;color:var(--silver-dim)}
-.linkbtn.hot{color:var(--accent)}
+/* The one-time language question (see langAsk): the yes/no card's flat frost, metal hairline
+   and cast shadow, in the place of the rooms (they step aside while it is asked), so it never
+   covers the start button, the modes or their note. The question in English, the line under
+   it in Hungarian, each answer the language's own name. */
+.langask{margin:auto 0 0;padding:10px 12px 10px 14px;border-radius:18px;
+  background:#0d1425;border:1px solid var(--hair-soft);box-shadow:inset 0 1px 0 var(--frost-hi),0 6px 0 rgba(2,5,12,.5);
+  animation:rise .35s .4s cubic-bezier(.2,1,.3,1) both}
+.langask[hidden]{display:none}
+.homewrap.asking .rooms{display:none}
+.homewrap.asking .mnote{margin-bottom:0}
+.langask .lq{display:flex;align-items:center;gap:12px}
+.langask .lai{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;border:1px solid var(--hair);color:var(--accent)}
+.langask .lai svg{width:21px;height:21px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.langask .lt{min-width:0}
+.langask b{display:block;font-family:var(--book);font-weight:700;font-size:17px;line-height:1.15;color:var(--silver)}
+.langask small{display:block;margin-top:2px;font-size:12.5px;line-height:1.3;color:var(--silver-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.langask .pair{margin-top:9px}
+.langask .act{height:44px;margin-top:0}
 /* Short phones (640-760 px tall): the same menu, tighter, so it still needs no scrolling */
 @media (max-height:760px){
   /* 14px of padding above: the fallback serif runs taller before the web font arrives */
   .homewrap{padding-top:calc(14px + env(safe-area-inset-top))}
-  .corner{top:calc(8px + env(safe-area-inset-top))}
+  .corner,.gear{top:calc(8px + env(safe-area-inset-top))}
   .hhead{min-height:190px;padding:58px 0 14px}
   .htitle{font-size:28px}
   .htitle span{margin-top:7px}
@@ -916,13 +965,22 @@ body.kid .hstars i{width:15px;height:15px}
   .modes button{height:44px;gap:3px}
   .mnote{margin-top:6px;font-size:15px}
   .rooms .ring{width:38px;height:38px}
-  .linkbtn{padding:5px 10px}
+  .langask{padding:9px 10px 9px 12px}
+  .langask .lai{width:34px;height:34px}
+  .langask .lai svg{width:19px;height:19px}
+  .langask b{font-size:16px}
+  .langask .pair{margin-top:8px}
+  .langask .act{height:40px}
 }
 /* very short screens (320x568): a lower window and a tighter menu, so it still fits with
    the two-line tagline of a returning player */
 @media (max-height:600px){
   .homewrap{padding-top:calc(8px + env(safe-area-inset-top))}
   .corner{top:calc(4px + env(safe-area-inset-top));height:26px}
+  .gear{top:calc(4px + env(safe-area-inset-top));width:26px;height:26px;margin-left:-13px}
+  /* the smaller gear keeps its 44 px hit area: 24 px inside the border + 2 x 10 */
+  .gear::before{inset:-10px}
+  .gear svg{width:16px;height:16px}
   .hhead{min-height:128px;padding:36px 0 12px}
   .htitle{font-size:24px}
   .htitle span{margin-top:5px}
@@ -937,7 +995,7 @@ body.kid .hstars i{width:15px;height:15px}
   .mnote{font-size:14px}
   .rooms .ring{width:34px;height:34px}
   .rooms svg{width:18px;height:18px}
-  .linkbtn{padding:3px 10px}
+  .langask{padding:8px 10px 8px 12px}
 }
 
 /* ================= szabályok ================= */
@@ -962,7 +1020,7 @@ body.kid .hstars i{width:15px;height:15px}
 .chap>button{width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px 11px;
   background:none;border:0;cursor:pointer;color:inherit;text-align:left}
 .chap .cn{flex:1;min-width:0;font-size:12.5px;font-weight:500;letter-spacing:.1em;font-variant-caps:all-small-caps;color:var(--accent)}
-.chap .cn small{display:block;margin-top:1px;font-family:var(--book);font-weight:700;font-size:17px;line-height:1.15;letter-spacing:0;
+.chap .cn small{display:block;margin-top:1px;font-family:var(--book);font-weight:700;font-size:17px;line-height:19.55px;letter-spacing:0;
   font-variant-caps:normal;color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chap .cs{display:flex;align-items:center;gap:4px;font-weight:500;font-size:13.5px;color:var(--silver-2);white-space:nowrap;font-variant-numeric:lining-nums}
 .chap .cs svg{width:11px;height:11px;display:block;fill:var(--gold)}
@@ -1058,6 +1116,10 @@ body.kid .hstars i{width:15px;height:15px}
 /* over the letter a toast (a new rank, the next unlock) stands under the header: at its
    usual height it would cover the letter's button on a 360 px phone (see toast) */
 .toast.up{bottom:auto;top:calc(80px + env(safe-area-inset-top))}
+/* English, in a two-line toast, mode note or letter row, leaves its last word alone on the
+   second line more often than not ("…if it fills up, you / lose."): pretty takes one more
+   down with it. Hungarian keeps the breaks it always had. */
+.toast:lang(en),.mnote:lang(en),.gains span:lang(en){text-wrap:pretty}
 /* Reduced motion — which Android also reports while battery saver is on. It used
    to switch off every animation and transition, and then the game felt laggy:
    a picked tile jumped instead of lifting, a finished triple sat still for half a
@@ -1080,15 +1142,15 @@ body.kid .hstars i{width:15px;height:15px}
 
 <header>
   <div class="hrow">
-    <div class="sigil" aria-label="szint"><svg viewBox="0 0 32 42" aria-hidden="true"><path class="a1" d="M2 41V19.8A19.6 19.6 0 0 1 16 1A19.6 19.6 0 0 1 30 19.8V41Z"/><path class="a2" d="M5.5 38V20.6A16.4 16.4 0 0 1 16 5.4A16.4 16.4 0 0 1 26.5 20.6V38"/></svg><b id="uiLvl">1</b></div>
+    <div class="sigil" aria-label="szint" data-i18n-aria="header.levelAria"><svg viewBox="0 0 32 42" aria-hidden="true"><path class="a1" d="M2 41V19.8A19.6 19.6 0 0 1 16 1A19.6 19.6 0 0 1 30 19.8V41Z"/><path class="a2" d="M5.5 38V20.6A16.4 16.4 0 0 1 16 5.4A16.4 16.4 0 0 1 26.5 20.6V38"/></svg><b id="uiLvl">1</b></div>
     <div class="hinfo">
-      <h1 id="uiShape">Teknős</h1>
+      <h1 id="uiShape"></h1>
       <p id="uiSub"><b id="uiLeft">—</b> csempe hátravan · <span id="uiTotal">—</span></p>
       <p id="uiDone"></p>
     </div>
     <div class="clockbox">
       <div class="clock" id="uiTime">0:00</div>
-      <div class="hstars" id="uiStars" aria-label="Csillagok"><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i></div>
+      <div class="hstars" id="uiStars" aria-label="Csillagok" data-i18n-aria="header.starsAria"><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i><i><svg viewBox="-5 -5 10 10"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></i></div>
     </div>
     <div class="purse" id="uiPurse"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#d6b274"/><circle cx="8" cy="8" r="5.2" fill="none" stroke="#8a6a32" stroke-width=".9"/><path d="M8 4.6l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" fill="#8a6a32"/></svg><span id="uiCoins">0</span></div>
   </div>
@@ -1098,15 +1160,15 @@ body.kid .hstars i{width:15px;height:15px}
 <div id="stage"><div id="board"></div></div>
 
 <!-- Hármas mód: picked tiles wait here; three alike vanish, a full tray loses -->
-<div id="tray" aria-label="Tálca"><div class="slots" id="traySlots"></div></div>
+<div id="tray" aria-label="Tálca" data-i18n-aria="tray.aria"><div class="slots" id="traySlots"></div></div>
 
 <!-- line icons: a tower arch, a crystal ball, crossing arrows, a chest, a turning arrow -->
 <footer>
-  <button class="key" id="bMenu"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5.5 20.5V10.8C5.5 7 8.4 4 12 2.8 15.6 4 18.5 7 18.5 10.8v9.7"/><path d="M3.5 20.5h17M12 20.5v-8.2M9 11.2h6"/></svg></span>Főmenü</button>
-  <button class="key" id="bHint"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="10.2" r="6.7"/><path d="M8.3 8.1a4.4 4.4 0 0 1 2.3-2.3"/><path d="M13.6 8.4c.25 1.1.65 1.5 1.75 1.75-1.1.25-1.5.65-1.75 1.75-.25-1.1-.65-1.5-1.75-1.75 1.1-.25 1.5-.65 1.75-1.75Z"/><path d="M7.6 15.4 6.4 20.6h11.2l-1.2-5.2"/></svg><span class="n" id="hintN">3</span></span>Jóslat</button>
-  <button class="key" id="bShuf"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7h3.8c4.6 0 5.8 10 10.4 10H21"/><path d="M3 17h3.8c1.5 0 2.6-1.1 3.4-2.6M13.6 9.4C14.4 8 15.4 7 17.2 7H21"/><path d="M18.6 4.6 21 7l-2.4 2.4M18.6 14.6 21 17l-2.4 2.4"/></svg><span class="n" id="shufN">2</span></span>Keverés</button>
-  <button class="key" id="bShop"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span>Tár</button>
-  <button class="key" id="bRestart"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4.6 12.4a7.4 7.4 0 1 0 2.3-5.6"/><path d="M4.4 3.6v4.1h4.1"/></svg></span>Újra</button>
+  <button class="key" id="bMenu" data-i18n="toolbar.menu"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5.5 20.5V10.8C5.5 7 8.4 4 12 2.8 15.6 4 18.5 7 18.5 10.8v9.7"/><path d="M3.5 20.5h17M12 20.5v-8.2M9 11.2h6"/></svg></span>Főmenü</button>
+  <button class="key" id="bHint" data-i18n="toolbar.hint"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="10.2" r="6.7"/><path d="M8.3 8.1a4.4 4.4 0 0 1 2.3-2.3"/><path d="M13.6 8.4c.25 1.1.65 1.5 1.75 1.75-1.1.25-1.5.65-1.75 1.75-.25-1.1-.65-1.5-1.75-1.75 1.1-.25 1.5-.65 1.75-1.75Z"/><path d="M7.6 15.4 6.4 20.6h11.2l-1.2-5.2"/></svg><span class="n" id="hintN">3</span></span>Jóslat</button>
+  <button class="key" id="bShuf" data-i18n="toolbar.shuffle"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7h3.8c4.6 0 5.8 10 10.4 10H21"/><path d="M3 17h3.8c1.5 0 2.6-1.1 3.4-2.6M13.6 9.4C14.4 8 15.4 7 17.2 7H21"/><path d="M18.6 4.6 21 7l-2.4 2.4M18.6 14.6 21 17l-2.4 2.4"/></svg><span class="n" id="shufN">2</span></span>Keverés</button>
+  <button class="key" id="bShop" data-i18n="toolbar.shop"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span>Tár</button>
+  <button class="key" id="bRestart" data-i18n="toolbar.restart"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4.6 12.4a7.4 7.4 0 1 0 2.3-5.6"/><path d="M4.4 3.6v4.1h4.1"/></svg></span>Újra</button>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -1115,48 +1177,95 @@ body.kid .hstars i{width:15px;height:15px}
      personal card (mode, level, pictures, place, chapter), the modes and four rooms -->
 <div class="veil on home" id="veilStart">
   <div class="homewrap">
-    <div class="corner l" id="hsStreakBox"><svg viewBox="0 0 11 15" aria-hidden="true"><path d="M5.5 1C6.4 4 9.6 5.6 9.6 9.3A4.1 4.1 0 0 1 1.4 9.3C1.4 7.2 2.6 6.2 3.4 5c.3 1.4 1 2 1.7 2.2C4.6 5 4.7 2.8 5.5 1Z"/></svg><b id="hsStreak">0</b><small>nap</small></div>
-    <button class="corner r" id="hsPurse" aria-label="Tallér — a Tár"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#d6b274"/><circle cx="8" cy="8" r="5.2" fill="none" stroke="#8a6a32" stroke-width=".9"/><path d="M8 4.6l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" fill="#8a6a32"/></svg><b id="hsCoins">0</b></button>
+    <div class="corner l" id="hsStreakBox"><svg viewBox="0 0 11 15" aria-hidden="true"><path d="M5.5 1C6.4 4 9.6 5.6 9.6 9.3A4.1 4.1 0 0 1 1.4 9.3C1.4 7.2 2.6 6.2 3.4 5c.3 1.4 1 2 1.7 2.2C4.6 5 4.7 2.8 5.5 1Z"/></svg><b id="hsStreak">0</b><small id="hsStreakUnit"></small></div>
+    <button class="corner r" id="hsPurse" aria-label="Tallér — a Tár" data-i18n-aria="home.purseAria"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#d6b274"/><circle cx="8" cy="8" r="5.2" fill="none" stroke="#8a6a32" stroke-width=".9"/><path d="M8 4.6l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" fill="#8a6a32"/></svg><b id="hsCoins">0</b></button>
+    <!-- the settings, on the arch's keystone between the two corners; line icon: a gear -->
+    <button class="gear" id="bSettings" aria-label="Beállítások" data-i18n-aria="home.settingsAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.33 5.3L10.63 2.8A9.3 9.3 0 0 1 13.37 2.8L13.67 5.3A6.9 6.9 0 0 1 15.55 6.09L17.53 4.52A9.3 9.3 0 0 1 19.48 6.47L17.91 8.45A6.9 6.9 0 0 1 18.7 10.33L21.2 10.63A9.3 9.3 0 0 1 21.2 13.37L18.7 13.67A6.9 6.9 0 0 1 17.91 15.55L19.48 17.53A9.3 9.3 0 0 1 17.53 19.48L15.55 17.91A6.9 6.9 0 0 1 13.67 18.7L13.37 21.2A9.3 9.3 0 0 1 10.63 21.2L10.33 18.7A6.9 6.9 0 0 1 8.45 17.91L6.47 19.48A9.3 9.3 0 0 1 4.52 17.53L6.09 15.55A6.9 6.9 0 0 1 5.3 13.67L2.8 13.37A9.3 9.3 0 0 1 2.8 10.63L5.3 10.33A6.9 6.9 0 0 1 6.09 8.45L4.52 6.47A9.3 9.3 0 0 1 6.47 4.52L8.45 6.09A6.9 6.9 0 0 1 10.33 5.3Z"/><circle cx="12" cy="12" r="3"/></svg><i class="dot"></i></button>
     <div class="hhead">
-      <h1 class="htitle">Gyertyafény<span>Mahjong</span></h1>
-      <p id="startSub">Végtelen szintek egy elvarázsolt kastélyban.</p>
+      <h1 class="htitle" lang="hu" data-i18n="brand.title">Gyertyafény<span data-i18n="brand.subtitle">Mahjong</span></h1>
+      <p id="startSub" data-i18n="home.tagline">Végtelen szintek egy elvarázsolt kastélyban.</p>
     </div>
     <section class="pcard">
       <div class="ctop">
         <div class="fan" id="hsFan" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="cinfo">
-          <div class="over" id="hsOver">Kaland · Gyertyagyújtó</div>
-          <h2><span class="num"><span id="hsLevel">1</span>.</span> szint</h2>
+          <div class="over" id="hsOver"></div>
+          <h2 id="hsHead"><span class="num"><span id="hsLevel">1</span>.</span> szint</h2>
           <p class="pk" id="hsPack"></p>
         </div>
-        <div class="cstars" aria-label="csillag"><svg viewBox="-5 -5 10 10" aria-hidden="true"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg><b id="hsStars">0</b></div>
+        <div class="cstars" aria-label="csillag" data-i18n-aria="home.starsAria"><svg viewBox="-5 -5 10 10" aria-hidden="true"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg><b id="hsStars">0</b></div>
       </div>
       <div class="prog">
-        <div class="lab"><span>Fejezet: <b id="hsChap">0 / 25</b></span><span class="nx" id="hsNext"></span></div>
+        <div class="lab"><span id="hsChapLab">Fejezet: <b id="hsChap">0 / 25</b></span><span class="nx" id="hsNext"></span></div>
         <div class="bar2"><i id="hsBar"></i></div>
       </div>
-      <button class="go" id="bGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="goText">Kezdjük</span></button>
+      <button class="go" id="bGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="goText"></span></button>
     </section>
     <!-- the modes: one segmented control, line icons (a map, an eye, the moon, a wand, the tray) -->
-    <div class="modes" id="modeRow" aria-label="Mód">
-      <button data-mode="adv" class="on"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z"/><path d="M9 4.5v13M15 6.5v13"/></svg>Kaland</button>
-      <button data-mode="mem"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>Memória</button>
-      <button data-mode="zen"><svg viewBox="0 0 24 24"><path d="M19.5 14.6A8 8 0 1 1 9.4 4.5a6.4 6.4 0 0 0 10.1 10.1Z"/></svg>Zen</button>
-      <button data-mode="kid"><svg viewBox="0 0 24 24"><path d="M4 20.5 13.6 10.9"/><path d="M16.6 3.2l1.1 2.4 2.5.4-1.8 1.8.4 2.5-2.2-1.2-2.3 1.2.5-2.5-1.8-1.8 2.5-.4Z"/><path d="M5.2 6.2v2.6M3.9 7.5h2.6M19.6 15.4v2.2M18.5 16.5h2.2"/></svg>Gyerek</button>
-      <button data-mode="tray"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="5.2" height="10" rx="1"/><rect x="9.4" y="7" width="5.2" height="10" rx="1"/><rect x="16.3" y="7" width="5.2" height="10" rx="1"/></svg>Hármas</button>
+    <div class="modes" id="modeRow" aria-label="Mód" data-i18n-aria="home.modesAria">
+      <button data-mode="adv" class="on" data-i18n="mode.adv.name"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z"/><path d="M9 4.5v13M15 6.5v13"/></svg>Kaland</button>
+      <button data-mode="mem" data-i18n="mode.mem.name"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>Memória</button>
+      <button data-mode="zen" data-i18n="mode.zen.name"><svg viewBox="0 0 24 24"><path d="M19.5 14.6A8 8 0 1 1 9.4 4.5a6.4 6.4 0 0 0 10.1 10.1Z"/></svg>Zen</button>
+      <button data-mode="kid" data-i18n="mode.kid.name"><svg viewBox="0 0 24 24"><path d="M4 20.5 13.6 10.9"/><path d="M16.6 3.2l1.1 2.4 2.5.4-1.8 1.8.4 2.5-2.2-1.2-2.3 1.2.5-2.5-1.8-1.8 2.5-.4Z"/><path d="M5.2 6.2v2.6M3.9 7.5h2.6M19.6 15.4v2.2M18.5 16.5h2.2"/></svg>Gyerek</button>
+      <button data-mode="tray" data-i18n="mode.tray.name"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="5.2" height="10" rx="1"/><rect x="9.4" y="7" width="5.2" height="10" rx="1"/><rect x="16.3" y="7" width="5.2" height="10" rx="1"/></svg>Hármas</button>
     </div>
-    <p class="mnote" id="modeNote">Ezer szint, csillagokkal és tallérral.</p>
+    <p class="mnote" id="modeNote"></p>
+    <!-- the one-time language question of a new install (see langAsk); line icon: a globe -->
+    <div class="langask" id="langAsk" role="dialog" aria-labelledby="laT" hidden>
+      <div class="lq">
+        <span class="lai"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.1 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.1-3.6-8.5S9.6 5.8 12 3.5Z"/></svg></span>
+        <span class="lt"><b id="laT" lang="en" data-i18n="lang.ask.title">Play in English?</b><small lang="hu" data-i18n="lang.ask.sub">Magyarul játszanál?</small></span>
+      </div>
+      <div class="pair">
+        <button class="act quiet" data-lang="hu" lang="hu">Magyar</button>
+        <button class="act" data-lang="en" lang="en">English</button>
+      </div>
+    </div>
     <!-- four rooms of the castle, each with its live status under the name -->
     <nav class="rooms">
-      <button id="bLevels"><span class="ring"><svg viewBox="0 0 24 24"><path d="M3.5 19.5h4.2v-4.2h4.2v-4.2h4.2V6.9h4.4"/><path d="M17.6 4.5h2.9v2.9"/></svg></span><b>Pályák</b><span id="lvChip">minden szint</span></button>
-      <button id="bDaily"><span class="ring"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M14 13.2a2.8 2.8 0 1 1-2.6-2.4 2.2 2.2 0 0 0 2.6 2.4Z"/></svg><i class="dot"></i></span><b>Napi kihívás</b><span id="dChip">ma még nyitva</span></button>
-      <button id="bStats"><span class="ring"><svg viewBox="0 0 24 24"><path d="M12 6.6C10 5 7 4.6 3.5 5.1v13c3.5-.5 6.5 0 8.5 1.6 2-1.6 5-2.1 8.5-1.6v-13C17 4.6 14 5 12 6.6Z"/><path d="M12 6.6v13"/></svg></span><b>Napló</b><span id="achChip">0 / 16 kitűző</span></button>
-      <button id="bHomeShop"><span class="ring"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span><b>Tár</b><span id="shopChip">3 / 84</span></button>
+      <button id="bLevels"><span class="ring"><svg viewBox="0 0 24 24"><path d="M3.5 19.5h4.2v-4.2h4.2v-4.2h4.2V6.9h4.4"/><path d="M17.6 4.5h2.9v2.9"/></svg></span><b data-i18n="home.room.levels">Pályák</b><span id="lvChip"></span></button>
+      <button id="bDaily"><span class="ring"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M14 13.2a2.8 2.8 0 1 1-2.6-2.4 2.2 2.2 0 0 0 2.6 2.4Z"/></svg><i class="dot"></i></span><b data-i18n="home.room.daily">Napi kihívás</b><span id="dChip"></span></button>
+      <button id="bStats"><span class="ring"><svg viewBox="0 0 24 24"><path d="M12 6.6C10 5 7 4.6 3.5 5.1v13c3.5-.5 6.5 0 8.5 1.6 2-1.6 5-2.1 8.5-1.6v-13C17 4.6 14 5 12 6.6Z"/><path d="M12 6.6v13"/></svg></span><b data-i18n="home.room.journal">Napló</b><span id="achChip"></span></button>
+      <button id="bHomeShop"><span class="ring"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span><b data-i18n="home.room.shop">Tár</b><span id="shopChip"></span></button>
     </nav>
-    <div class="hlinks">
-      <button class="linkbtn" id="bHelp">Szabályok</button><span>·</span>
-      <button class="linkbtn" id="bReset">Haladás törlése</button>
+  </div>
+</div>
+
+<!-- Beállítások: a page like the rooms, opened by the gear on the menu: sound, language, the
+     save code, the rules, and set apart at the foot the reset. It comes before the rules in
+     the page, which it opens: of two pages on at once, the later one is drawn on top. -->
+<div class="veil page" id="veilSettings">
+  <div class="pagewrap">
+    <div class="trow">
+      <button class="back" id="bSetBack" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="settings.title">Beállítások</h2>
     </div>
+    <div class="sec"><h3 data-i18n="settings.sound">Hang</h3></div>
+    <div class="prefs">
+      <div class="switch" id="swSfx" role="switch"><span data-i18n="settings.sfx">Hangeffektek</span><span class="st" id="stSfx"></span></div>
+      <div class="switch" id="swMusic" role="switch"><span data-i18n="settings.music">Aláfestő zene</span><span class="st" id="stMusic"></span></div>
+    </div>
+    <!-- the English word stays beside the heading, so the row is found by someone who
+         cannot read the rest; each language is named in itself (see drawLangs) -->
+    <div class="sec"><h3 data-i18n="settings.lang">Nyelv</h3><span lang="en" data-i18n="settings.langNote" data-i18n-lang="settings.langNoteLang">Language</span></div>
+    <div class="seg langs" id="langSeg" role="radiogroup" aria-label="Nyelv · Language" data-i18n-aria="lang.label"></div>
+    <div class="sec"><h3 data-i18n="settings.saveHead">Mentés</h3></div>
+    <div class="prefs">
+      <div class="switch more" id="swSave"><span data-i18n="settings.save">Mentés ki- és bemásolása</span><span class="st" id="stSave"></span></div>
+      <div id="saveWrap" style="display:none">
+        <textarea id="saveTxt" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <p class="sub" data-i18n="settings.saveHelp">Tedd el a kódot, és bármikor visszatöltheted — új telefonon is.</p>
+        <div class="pair">
+          <button class="act quiet" id="bSaveCopy" data-i18n="settings.copy">Másolás</button>
+          <button class="act quiet" id="bSaveLoad" data-i18n="settings.load">Visszatöltés</button>
+        </div>
+      </div>
+    </div>
+    <div class="sec"><h3 data-i18n="settings.help">Súgó</h3></div>
+    <div class="prefs">
+      <button class="switch more" id="bHelp"><span data-i18n="settings.rules">Szabályok</span><span class="st"></span></button>
+    </div>
+    <button class="act quiet danger" id="bReset" data-i18n="settings.reset">Haladás törlése</button>
   </div>
 </div>
 
@@ -1165,32 +1274,32 @@ body.kid .hstars i{width:15px;height:15px}
 <div class="veil page" id="veilHelp">
   <div class="pagewrap">
     <div class="trow">
-      <button class="back" id="bHelpBack" aria-label="Vissza"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
-      <h2>Szabályok</h2>
+      <button class="back" id="bHelpBack" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="rules.title">Szabályok</h2>
     </div>
     <!-- line icons: a pair, a stacked twin, a spark, crossing arrows, a crystal ball, the tray, a chest -->
     <ul class="lore">
-      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="7.5" height="11" rx="1.4"/><rect x="13" y="5.5" width="7.5" height="11" rx="1.4"/><path d="M7.25 9.4v3.2M16.75 9.4v3.2M5 20h14"/></svg></span><span>Két <b>egyforma</b> csempe tűnik el együtt. Csak <b>szabad</b> csempét vehetsz fel: nincs rajta semmi, és a bal vagy jobb oldala üres.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="4" y="8.5" width="9" height="12" rx="1.4"/><path d="M8.5 8.5V5.4c0-.8.6-1.4 1.4-1.4h6.7c.8 0 1.4.6 1.4 1.4v10.2c0 .8-.6 1.4-1.4 1.4H13"/><path d="M13.25 7.5v3"/></svg></span><span>Ha egy csempe a saját <b>ikertestvérén</b> fekszik, koppints a felsőre kétszer, és együtt eltűnnek.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M12 3.5c.7 5.1 3.4 7.8 8.5 8.5-5.1.7-7.8 3.4-8.5 8.5-.7-5.1-3.4-7.8-8.5-8.5 5.1-.7 7.8-3.4 8.5-8.5Z"/></svg></span><span>Minden szint <b>kirakható</b>. Gyorsan és segítség nélkül <b>3&nbsp;<svg class="st" viewBox="-5 -5 10 10" aria-label="csillag"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></b> jár — a fejlécben játék közben is látod.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M3 7h3.8c4.6 0 5.8 10 10.4 10H21"/><path d="M3 17h3.8c1.5 0 2.6-1.1 3.4-2.6M13.6 9.4C14.4 8 15.4 7 17.2 7H21"/><path d="M18.6 4.6 21 7l-2.4 2.4M18.6 14.6 21 17l-2.4 2.4"/></svg></span><span>Elakadtál? <b>Keverés</b>, és ha az is elfogy, tallérért <b>mentőöv</b>.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><circle cx="12" cy="10.2" r="6.7"/><path d="M8.3 8.1a4.4 4.4 0 0 1 2.3-2.3"/><path d="M13.6 8.4c.25 1.1.65 1.5 1.75 1.75-1.1.25-1.5.65-1.75 1.75-.25-1.1-.65-1.5-1.75-1.75 1.1-.25 1.5-.65 1.75-1.75Z"/><path d="M7.6 15.4 6.4 20.6h11.2l-1.2-5.2"/></svg></span><span>A <b>jóslat</b> és a <b>keverés</b> egy közös készletből fogy: az elején 3-3 van, a Tárban vehetsz, és minden 5. szinten jóslat, minden 10.-en keverés jár ajándékba.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="5.2" height="10" rx="1"/><rect x="9.4" y="7" width="5.2" height="10" rx="1"/><rect x="16.3" y="7" width="5.2" height="10" rx="1"/></svg></span><span><b>Hármas</b> módban a felvett csempe a 7 helyes tálcára kerül. Három egyforma együtt eltűnik — ha a tálca megtelik, vesztettél.</span></li>
-      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span><span>A <b>Tárban</b> témákat, csempestílust és hátteret nyitsz.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="7.5" height="11" rx="1.4"/><rect x="13" y="5.5" width="7.5" height="11" rx="1.4"/><path d="M7.25 9.4v3.2M16.75 9.4v3.2M5 20h14"/></svg></span><span data-i18n-html="rules.r1">Két <b>egyforma</b> csempe tűnik el együtt. Csak <b>szabad</b> csempét vehetsz fel: nincs rajta semmi, és a bal vagy jobb oldala üres.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="4" y="8.5" width="9" height="12" rx="1.4"/><path d="M8.5 8.5V5.4c0-.8.6-1.4 1.4-1.4h6.7c.8 0 1.4.6 1.4 1.4v10.2c0 .8-.6 1.4-1.4 1.4H13"/><path d="M13.25 7.5v3"/></svg></span><span data-i18n-html="rules.r2">Ha egy csempe a saját <b>ikertestvérén</b> fekszik, koppints a felsőre kétszer, és együtt eltűnnek.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M12 3.5c.7 5.1 3.4 7.8 8.5 8.5-5.1.7-7.8 3.4-8.5 8.5-.7-5.1-3.4-7.8-8.5-8.5 5.1-.7 7.8-3.4 8.5-8.5Z"/></svg></span><span data-i18n-html="rules.r3">Minden szint <b>kirakható</b>. Gyorsan és segítség nélkül <b>3&nbsp;<svg class="st" viewBox="-5 -5 10 10" aria-label="csillag"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg></b> jár — a fejlécben játék közben is látod.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M3 7h3.8c4.6 0 5.8 10 10.4 10H21"/><path d="M3 17h3.8c1.5 0 2.6-1.1 3.4-2.6M13.6 9.4C14.4 8 15.4 7 17.2 7H21"/><path d="M18.6 4.6 21 7l-2.4 2.4M18.6 14.6 21 17l-2.4 2.4"/></svg></span><span data-i18n-html="rules.r4">Elakadtál? <b>Keverés</b>, és ha az is elfogy, tallérért <b>mentőöv</b>.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><circle cx="12" cy="10.2" r="6.7"/><path d="M8.3 8.1a4.4 4.4 0 0 1 2.3-2.3"/><path d="M13.6 8.4c.25 1.1.65 1.5 1.75 1.75-1.1.25-1.5.65-1.75 1.75-.25-1.1-.65-1.5-1.75-1.75 1.1-.25 1.5-.65 1.75-1.75Z"/><path d="M7.6 15.4 6.4 20.6h11.2l-1.2-5.2"/></svg></span><span data-i18n-html="rules.r5">A <b>jóslat</b> és a <b>keverés</b> egy közös készletből fogy: az elején 3-3 van, a Tárban vehetsz, és minden 5. szinten jóslat, minden 10.-en keverés jár ajándékba.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="5.2" height="10" rx="1"/><rect x="9.4" y="7" width="5.2" height="10" rx="1"/><rect x="16.3" y="7" width="5.2" height="10" rx="1"/></svg></span><span data-i18n-html="rules.r6"><b>Hármas</b> módban a felvett csempe a 7 helyes tálcára kerül. Három egyforma együtt eltűnik — ha a tálca megtelik, vesztettél.</span></li>
+      <li><span class="ri"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span><span data-i18n-html="rules.r7">A <b>Tárban</b> témákat, csempestílust és hátteret nyitsz.</span></li>
     </ul>
-    <button class="act" id="bHelpClose">Értem</button>
+    <button class="act" id="bHelpClose" data-i18n="rules.ok">Értem</button>
   </div>
 </div>
 
 <div class="veil page" id="veilLevels">
   <div class="pagewrap">
     <div class="trow">
-      <button class="back" id="lvClose" aria-label="Vissza"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
-      <h2>Pályák</h2>
+      <button class="back" id="lvClose" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="levels.title">Pályák</h2>
     </div>
     <p class="tsub" id="lvSub"></p>
     <div class="lvtop">
-      <button class="act" id="lvGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="lvGoText">Folytatás</span></button>
+      <button class="act" id="lvGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="lvGoText"></span></button>
     </div>
     <div id="lvList"></div>
   </div>
@@ -1200,29 +1309,29 @@ body.kid .hstars i{width:15px;height:15px}
 <div class="veil" id="veilAsk">
   <div class="panel">
     <div class="aseal" id="askSeal"></div>
-    <h2 id="askTitle">Biztos?</h2>
+    <h2 id="askTitle" data-i18n="ask.defaultTitle">Biztos?</h2>
     <p id="askText"></p>
-    <button class="act" id="askYes">Igen</button>
-    <button class="act quiet" id="askNo">Mégsem</button>
+    <button class="act" id="askYes" data-i18n="ask.defaultYes">Igen</button>
+    <button class="act quiet" id="askNo" data-i18n="ask.no">Mégsem</button>
   </div>
 </div>
 
 <div class="veil page" id="veilDaily">
   <div class="pagewrap">
     <div class="trow">
-      <button class="back" id="bDailyClose" aria-label="Vissza"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
-      <h2>Napi kihívás</h2>
+      <button class="back" id="bDailyClose" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="daily.title">Napi kihívás</h2>
     </div>
-    <p class="intro">Minden napra egy pálya — és minden nap ugyanaz mindenkinek.</p>
+    <p class="intro" data-i18n="daily.intro">Minden napra egy pálya — és minden nap ugyanaz mindenkinek.</p>
     <div class="streaks">
-      <div><b id="dStreak">0</b><span>sorozat</span></div>
-      <div><b id="dBest">0</b><span>leghosszabb</span></div>
-      <div><b id="dTotal">0</b><span>összesen</span></div>
+      <div><b id="dStreak">0</b><span data-i18n="daily.streak">sorozat</span></div>
+      <div><b id="dBest">0</b><span data-i18n="daily.best">leghosszabb</span></div>
+      <div><b id="dTotal">0</b><span data-i18n="daily.total">összesen</span></div>
     </div>
     <div class="sec"><h3 id="dMonth"></h3></div>
     <div class="cal" id="dCal"></div>
     <div class="dailygo">
-      <button class="act" id="bDailyGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="dGoText">Mai pálya</span></button>
+      <button class="act" id="bDailyGo"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#e8962f"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#ffd27a"/></svg><span id="dGoText"></span></button>
     </div>
   </div>
 </div>
@@ -1230,14 +1339,14 @@ body.kid .hstars i{width:15px;height:15px}
 <div class="veil page" id="veilStats">
   <div class="pagewrap">
     <div class="trow">
-      <button class="back" id="bStatsClose" aria-label="Vissza"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
-      <h2>Napló</h2>
+      <button class="back" id="bStatsClose" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="journal.title">Napló</h2>
     </div>
     <p class="tsub" id="stRank"></p>
     <div class="stats" id="stGrid"></div>
-    <div class="sec"><h3>Teljesítmények</h3><span id="achCount"></span></div>
+    <div class="sec"><h3 data-i18n="journal.badgesTitle">Teljesítmények</h3><span id="achCount"></span></div>
     <div class="ach" id="achGrid"></div>
-    <p class="achname" id="achInfo">Koppints egy kitűzőre.</p>
+    <p class="achname" id="achInfo" data-i18n="journal.tapBadge">Koppints egy kitűzőre.</p>
   </div>
 </div>
 
@@ -1247,13 +1356,13 @@ body.kid .hstars i{width:15px;height:15px}
      on take the toolbar's place. A level lost (.lost) gets the same letter over a dimmed board. -->
 <div class="veil end" id="veilEnd">
   <div class="endwrap">
-    <div class="const" id="endStars" aria-label="Csillagok"></div>
+    <div class="const" id="endStars" aria-label="Csillagok" data-i18n-aria="end.starsAria"></div>
     <section class="letter" id="endLetter" aria-labelledby="endTitle">
       <div class="sheet" id="endSheet"></div>
       <div class="ink">
         <div class="over" id="endOver"></div>
-        <h2 id="endTitle">Kirakva</h2>
-        <div class="time"><b id="endTime">0:00</b><span id="endPar"></span><span class="rec" id="endRec"><svg viewBox="-5 -5 10 10" aria-hidden="true"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg>Rekord</span></div>
+        <h2 id="endTitle"></h2>
+        <div class="time"><b id="endTime">0:00</b><span id="endPar"></span><span class="rec" id="endRec" data-i18n="end.record"><svg viewBox="-5 -5 10 10" aria-hidden="true"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg>Rekord</span></div>
         <p class="best" id="endBest"></p>
         <svg class="orn" viewBox="0 0 289 12" preserveAspectRatio="none" aria-hidden="true"><path d="M6 6.5H124M165 6.5H283" stroke="#2a1c0f" stroke-opacity=".28" stroke-width=".9"/><path d="M144.5 1.5c.4 3 1.6 4.2 4.6 4.6-3 .4-4.2 1.6-4.6 4.6-.4-3-1.6-4.2-4.6-4.6 3-.4 4.2-1.6 4.6-4.6Z" fill="#2a1c0f" fill-opacity=".55"/><circle cx="132" cy="6.5" r="1.2" fill="#2a1c0f" fill-opacity=".4"/><circle cx="157" cy="6.5" r="1.2" fill="#2a1c0f" fill-opacity=".4"/></svg>
         <p class="txt" id="endText"></p>
@@ -1261,12 +1370,12 @@ body.kid .hstars i{width:15px;height:15px}
       </div>
       <div class="lseal" id="endSeal"></div>
     </section>
-    <button class="wax" id="bRescue"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#ffc96a"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#fff3d6"/></svg><span id="rescueText">Mentőöv</span><small id="rescueCost"></small></button>
-    <button class="wax" id="bNext"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#ffc96a"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#fff3d6"/></svg>Következő szint<small id="nextLvl"></small></button>
-    <nav class="endbar" aria-label="Továbbiak">
-      <button class="key" id="bEndMenu"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5.5 20.5V10.8C5.5 7 8.4 4 12 2.8 15.6 4 18.5 7 18.5 10.8v9.7"/><path d="M3.5 20.5h17M12 20.5v-8.2M9 11.2h6"/></svg></span>Főmenü</button>
-      <button class="key" id="bAgainLvl"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4.6 12.4a7.4 7.4 0 1 0 2.3-5.6"/><path d="M4.4 3.6v4.1h4.1"/></svg></span><span id="againText">Ez a szint újra</span></button>
-      <button class="key" id="bShop2"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span>Tár</button>
+    <button class="wax" id="bRescue"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#ffc96a"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#fff3d6"/></svg><span id="rescueText"></span><small id="rescueCost"></small></button>
+    <button class="wax" id="bNext" data-i18n="end.next"><svg viewBox="0 0 12 18" aria-hidden="true"><path d="M6 1C7 4.6 11 6.6 11 11.2A5 5 0 0 1 1 11.2C1 8.6 2.5 7.4 3.5 6c.4 1.7 1.2 2.4 2.1 2.7C5 6 5.1 3.4 6 1Z" fill="#ffc96a"/><path d="M6 9.4c.5 1.6 2.2 2.4 2.2 4.2a2.2 2.2 0 0 1-4.4 0c0-1.2.9-1.9 1.3-2.6.2.8.6 1 .9 1.1C5.8 11 5.7 10.3 6 9.4Z" fill="#fff3d6"/></svg>Következő szint<small id="nextLvl"></small></button>
+    <nav class="endbar" aria-label="Továbbiak" data-i18n-aria="end.barAria">
+      <button class="key" id="bEndMenu" data-i18n="endbar.menu"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5.5 20.5V10.8C5.5 7 8.4 4 12 2.8 15.6 4 18.5 7 18.5 10.8v9.7"/><path d="M3.5 20.5h17M12 20.5v-8.2M9 11.2h6"/></svg></span>Főmenü</button>
+      <button class="key" id="bAgainLvl"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4.6 12.4a7.4 7.4 0 1 0 2.3-5.6"/><path d="M4.4 3.6v4.1h4.1"/></svg></span><span id="againText"></span></button>
+      <button class="key" id="bShop2" data-i18n="endbar.shop"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.8 10.2h16.4v8.6c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2Z"/><path d="M3.8 10.2V8.4C3.8 6 5.6 4 8 4h8c2.4 0 4.2 2 4.2 4.4v1.8"/><path d="M10.4 10.2v2.6c0 .4.3.7.7.7h1.8c.4 0 .7-.3.7-.7v-2.6"/></svg></span>Tár</button>
     </nav>
   </div>
 </div>
@@ -1276,33 +1385,19 @@ body.kid .hstars i{width:15px;height:15px}
 <div class="veil page" id="veilShop">
   <div class="pagewrap shopwrap">
     <div class="trow">
-      <button class="back" id="bCloseShop" aria-label="Vissza"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
-      <h2>Tár</h2>
+      <button class="back" id="bCloseShop" aria-label="Vissza" data-i18n-aria="common.backAria"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+      <h2 data-i18n="shop.title">Tár</h2>
       <div class="purse" id="shopPurse"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#d6b274"/><circle cx="8" cy="8" r="5.2" fill="none" stroke="#8a6a32" stroke-width=".9"/><path d="M8 4.6l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" fill="#8a6a32"/></svg><span id="shopCoins">0</span></div>
     </div>
     <p class="tsub" id="shopSub"></p>
-    <div class="seg" id="shopTabs" aria-label="A Tár részei">
-      <button data-tab="skin" class="on">Csempe</button>
-      <button data-tab="pack">Ikonok</button>
-      <button data-tab="bg">Háttér</button>
-      <button data-tab="upg">Segítség</button>
+    <div class="seg" id="shopTabs" aria-label="A Tár részei" data-i18n-aria="shop.tabsAria">
+      <button data-tab="skin" class="on" data-i18n="shop.tab.skin">Csempe</button>
+      <button data-tab="pack" data-i18n="shop.tab.pack">Ikonok</button>
+      <button data-tab="bg" data-i18n="shop.tab.bg">Háttér</button>
+      <button data-tab="upg" data-i18n="shop.tab.upg">Segítség</button>
     </div>
     <p class="intro" id="shopIntro"></p>
     <div id="shopGrid"></div>
-    <div class="sec"><h3>Beállítások</h3></div>
-    <div class="prefs">
-      <div class="switch" id="swSfx" role="switch"><span>Hangok</span><span class="st" id="stSfx">be</span></div>
-      <div class="switch" id="swMusic" role="switch"><span>Aláfestő zene</span><span class="st" id="stMusic">ki</span></div>
-      <div class="switch" id="swSave"><span>Mentés ki- és bemásolása</span><span class="st" id="stSave">nyit</span></div>
-      <div id="saveWrap" style="display:none">
-        <textarea id="saveTxt" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
-        <p class="sub">Tedd el a kódot, és bármikor visszatöltheted — új telefonon is.</p>
-        <div class="pair">
-          <button class="act quiet" id="bSaveCopy">Másolás</button>
-          <button class="act quiet" id="bSaveLoad">Visszatöltés</button>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -1313,6 +1408,813 @@ body.kid .hstars i{width:15px;height:15px}
    Ha üresen hagyod, a játék generált zenét szól.
    ========================================================= */
 const CUSTOM_MUSIC_URL = '';
+
+/* ================= i18n =================
+   Every word the player sees comes from STR through t(). A sentence is one template per
+   language with named slots, never glued from pieces; what a template cannot hold (the
+   ending after a number, the article before it, plural forms, number grouping) is grammar,
+   per language, in GRAM. The data tables below (packs, skins, places, ranks, badges,
+   shapes …) keep their Hungarian words inline as the source of those HU strings: regData
+   files them under keys by item id, and the UI reads every name through t() too.
+   In a template: {name} is a param (a number is grouped by G.num, as the purses are);
+   {=name} a count the language prints its own way (G.cnt: Hungarian has always printed
+   these plainly, "most 12840 tallérod van"); {name|fn} the param through the grammar
+   G.fn; a value of {one, other} is picked by the param n (G.plural). */
+const STR={hu:{
+  /* the page */
+  'meta.title':'Gyertyafény Mahjong',
+  /* the menu */
+  'brand.title':'Gyertyafény',
+  'brand.subtitle':'Mahjong',
+  'home.tagline':'Végtelen szintek egy elvarázsolt kastélyban.',
+  'home.streakUnit':'nap',
+  'home.purseAria':'Tallér — a Tár',
+  'home.settingsAria':'Beállítások',
+  'home.over':'{mode} · {rank}',
+  'home.level':'<span class="num">{n}.</span> szint',
+  'home.starsAria':'csillag',
+  'home.chapterLabel':'Fejezet: {chap}',
+  'home.nextChapter':'még {n} szint · <b>{rank}</b>',
+  'home.allDone':'minden szint kész',
+  'home.lastChapter':'az utolsó fejezet',
+  'home.packLine':'{pack}<span class="cs"> csempék</span> · {place}',
+  'home.kidLine':'{pack} · {place}',
+  'home.kidPictures':'Gyerek képek',
+  'home.go.start':'Kezdjük',
+  'home.go.continue':'Folytatás',
+  'home.modesAria':'Mód',
+  'home.room.levels':'Pályák',
+  'home.room.daily':'Napi kihívás',
+  'home.room.journal':'Napló',
+  'home.room.shop':'Tár',
+  'home.chip.levelsAll':'minden szint',
+  'home.chip.levelsDone':'{=n} kész',
+  'home.chip.dailyOpen':'ma még nyitva',
+  'home.chip.dailyDone':'ma kész',
+  'home.chip.badges':'{got} / {total} kitűző',
+  'home.chip.shop':'{owned} / {total}',
+  /* header, toolbar, tray */
+  'header.levelAria':'szint',
+  'header.daily':'Napi',
+  'header.total':'{=n}-{n|fromEnd}',
+  'header.tilesLeft':'{left} csempe hátravan · {total}',
+  'header.cleared':'{tiles} csempe · {pairs} pár',
+  'header.clearedTray':'{tiles} csempe · {triples} hármas',
+  'header.starsAria':'Csillagok',
+  'toolbar.menu':'Főmenü',
+  'toolbar.hint':'Jóslat',
+  'toolbar.shuffle':'Keverés',
+  'toolbar.shop':'Tár',
+  'toolbar.restart':'Újra',
+  'tray.aria':'Tálca',
+  /* rules */
+  'rules.title':'Szabályok',
+  'rules.r1':'Két <b>egyforma</b> csempe tűnik el együtt. Csak <b>szabad</b> csempét vehetsz fel: nincs rajta semmi, és a bal vagy jobb oldala üres.',
+  'rules.r2':'Ha egy csempe a saját <b>ikertestvérén</b> fekszik, koppints a felsőre kétszer, és együtt eltűnnek.',
+  'rules.r3':'Minden szint <b>kirakható</b>. Gyorsan és segítség nélkül <b>3&nbsp;{star}</b> jár — a fejlécben játék közben is látod.',
+  'rules.starAria':'csillag',
+  'rules.r4':'Elakadtál? <b>Keverés</b>, és ha az is elfogy, tallérért <b>mentőöv</b>.',
+  'rules.r5':'A <b>jóslat</b> és a <b>keverés</b> egy közös készletből fogy: az elején 3-3 van, a Tárban vehetsz, és minden 5. szinten jóslat, minden 10.-en keverés jár ajándékba.',
+  'rules.r6':'<b>Hármas</b> módban a felvett csempe a 7 helyes tálcára kerül. Három egyforma együtt eltűnik — ha a tálca megtelik, vesztettél.',
+  'rules.r7':'A <b>Tárban</b> témákat, csempestílust és hátteret nyitsz.',
+  'rules.ok':'Értem',
+  'common.backAria':'Vissza',
+  'common.lockAria':'zárva',
+  /* Pályák */
+  'levels.title':'Pályák',
+  'levels.sub':'{mode} · {=n} szint kész · <b>{=stars}</b>{star}',
+  'levels.go.continue':'Folytatás — {n|ord} szint',
+  'levels.chapterRange':'{a}–{z}',
+  'levels.chapterStars':'{got} / {max}',
+  'levels.now':'most',
+  /* the yes/no card */
+  'ask.defaultTitle':'Biztos?',
+  'ask.defaultYes':'Igen',
+  'ask.no':'Mégsem',
+  'ask.menu.title':'Vissza a főmenübe?',
+  'ask.menu.text':'A szintet elölről kezded, amikor visszatérsz — {n} felvett csempe vész el.',
+  'ask.menu.yes':'Főmenü',
+  'ask.again.title':'Szint újrakezdése?',
+  'ask.again.text':'Ugyanezt a pályát kapod elölről — {n} felvett csempe vész el.',
+  'ask.again.yes':'Újrakezdem',
+  'ask.buy.hintTitle':'Elfogyott a jóslat',
+  'ask.buy.shufTitle':'Elfogyott a keverés',
+  'ask.buy.text':'3 darab {price} tallér — most {=n} tallérod van. Nagyobb csomagot a Tárban találsz.',
+  'ask.buy.yes':'Megveszem',
+  'ask.wipe.title':'Minden haladás törlése?',
+  'ask.wipe.text':'Szintek, tallérok, a Tár gyűjteménye, a kitűzők és a napi sorozat is elvész. Ez nem vonható vissza — előbb mentsd ki a kódot fent, a Mentésnél, ha meg akarod tartani.',
+  'ask.wipe.yes':'Törlöm',
+  /* Napi kihívás */
+  'daily.title':'Napi kihívás',
+  'daily.intro':'Minden napra egy pálya — és minden nap ugyanaz mindenkinek.',
+  'daily.streak':'sorozat',
+  'daily.best':'leghosszabb',
+  'daily.total':'összesen',
+  'daily.go.today':'Mai pálya',
+  'daily.go.again':'A mai pálya újra',
+  'daily.overLine':'Napi kihívás · {date}',
+  'date.wd.0':'H',
+  'date.wd.1':'K',
+  'date.wd.2':'Sze',
+  'date.wd.3':'Cs',
+  'date.wd.4':'P',
+  'date.wd.5':'Szo',
+  'date.wd.6':'V',
+  'date.month.0':'Január',
+  'date.month.1':'Február',
+  'date.month.2':'Március',
+  'date.month.3':'Április',
+  'date.month.4':'Május',
+  'date.month.5':'Június',
+  'date.month.6':'Július',
+  'date.month.7':'Augusztus',
+  'date.month.8':'Szeptember',
+  'date.month.9':'Október',
+  'date.month.10':'November',
+  'date.month.11':'December',
+  /* Napló */
+  'journal.title':'Napló',
+  'journal.rankLine':'{rank} · {=n} szint mögötted',
+  'journal.stat.solved':'Kirakott szint',
+  'journal.stat.advLevel':'Kaland szint',
+  'journal.stat.time':'Összjáték-idő',
+  'journal.stat.fastest':'Leggyorsabb szint',
+  'journal.stat.perfect':'Három csillag',
+  'journal.stat.stars':'Összegyűjtött csillag',
+  'journal.stat.streak':'Napi sorozat',
+  'journal.stat.bestStreak':'Leghosszabb sorozat',
+  'journal.stat.daily':'Napi pályák',
+  'journal.stat.collection':'Tár gyűjtemény',
+  'journal.collection':'{a}/{b}',
+  'journal.days':'{=n} nap',
+  'journal.badgesTitle':'Teljesítmények',
+  'journal.badgeCount':'{got} / {total} megvan',
+  'journal.tapBadge':'Koppints egy kitűzőre.',
+  'journal.badgeInfo':'<b>{name}</b> — {desc}',
+  /* the level-complete letter */
+  'end.starsAria':'Csillagok',
+  'end.starsCountAria':'{n} csillag',
+  'end.overLine':'{n|ord} szint · {mode}',
+  'end.title.won':'Kirakva',
+  'end.title.daily':'Mai pálya kész',
+  'end.title.kid':'Ügyes vagy!',
+  'end.title.trayFull':'Megtelt a tálca',
+  'end.title.stuck':'Elakadt',
+  'end.record':'Rekord',
+  'end.par':'céridő {time}',
+  'end.best.time':'Eddigi legjobb idő: {time}.',
+  'end.best.newStars':'Új csillagrekord: {from} → {to} ★',
+  'end.best.prevStars':'Legjobbad ezen: {stars}',
+  'end.text.dailyRepeat':'A mai pályát már teljesítetted — a sorozat nem nőtt.',
+  'end.text.kid':'Minden képet megtaláltál. Jöhet a következő?',
+  'end.text.trayLost':'Megtelt a tálca: hét csempe, de egyikből sincs három. Mentőövvel az utolsó három visszakerül a táblára — vagy kezdd a szintet elölről.',
+  'end.text.stuck':'A maradék csempék egymást zárják, és elfogyott a keverés. Mentőövvel ott folytatod, ahol abbahagytad — vagy kezdd a szintet elölről, a haladásod megmarad.',
+  'end.gain.level':'a szintért',
+  'end.gain.replayStars':'{a} újra kirakva · {b} új csillag',
+  'end.gain.replay':'újra kirakott szint',
+  'end.gain.first':'{a} a szintért · {b} első kirakás',
+  'end.gain.chest':'mérföldkő-láda',
+  'end.gain.streak':'napi sorozat · {=n} nap',
+  'end.gain.hintAmt':'+1 jóslat',
+  'end.gain.shufAmt':'+1 keverés',
+  'end.gain.dailyGift':'a napi pálya ajándéka',
+  'end.gain.gift5':'ajándék minden 5. szinten',
+  'end.gain.gift10':'minden 10. szinten',
+  'end.rescue':'Mentőöv',
+  'end.next':'Következő szint',
+  'end.nextNum':'{n|ord}',
+  'end.barAria':'Továbbiak',
+  'endbar.menu':'Főmenü',
+  'endbar.again':'Ez a szint újra',
+  'endbar.shop':'Tár',
+  /* Tár */
+  'shop.title':'Tár',
+  'shop.tabsAria':'A Tár részei',
+  'shop.tab.skin':'Csempe',
+  'shop.tab.pack':'Ikonok',
+  'shop.tab.bg':'Háttér',
+  'shop.tab.upg':'Segítség',
+  'shop.sub':'{rank} · gyűjtemény <b>{owned} / {total}</b>',
+  'shop.intro.skin':'Az asztal csempéinek anyaga és színe.',
+  'shop.intro.pack':'A képek, amelyeket párba gyűjtesz.',
+  'shop.intro.bg':'Amit a torony ablakából látsz, és a pecsét színe.',
+  'shop.intro.upg':'Jóslat és keverés a nehéz táblákra, és ami tartósan segít.',
+  'shop.head.skin':'Csempestílus',
+  'shop.head.pack':'Ikonkészlet',
+  'shop.note.pack':'új készlet új táblát oszt',
+  'shop.head.bg':'Helyszín',
+  'shop.note.bg':'játék közben a tábla mögött',
+  'shop.owned':'{n} / {total} megvan',
+  'shop.state.inUse':'Használatban',
+  'shop.state.owned':'Megvan',
+  'shop.state.fromLevel':'{n|ord} szinttől',
+  'shop.seal.head':'Pecsétszín',
+  'shop.seal.note':'keretek, vonalak, pecsét',
+  'shop.seal.active':'Aktív',
+  'shop.upg.stockHead':'Készlet',
+  'shop.upg.stockNote':'nálad {hints} · {shuffles}',
+  'count.hint':'{=n} jóslat',
+  'count.shuffle':'{=n} keverés',
+  'shop.upg.head':'Fejlesztés',
+  'shop.upg.note':'végleges, minden szintre',
+  'shop.upg.progress':'{note} · {n} / {max}',
+  'shop.upg.maxed':'Teljes',
+  'aidpack.name':'{item} <span class="q">×{q}</span>',
+  'aidpack.item.hint':'Jóslat',
+  'aidpack.item.shuf':'Keverés',
+  /* Beállítások */
+  'settings.title':'Beállítások',
+  'settings.sound':'Hang',
+  'settings.sfx':'Hangeffektek',
+  'settings.music':'Aláfestő zene',
+  'settings.saveHead':'Mentés',
+  'settings.save':'Mentés ki- és bemásolása',
+  'settings.on':'be',
+  'settings.off':'ki',
+  'settings.open':'nyit',
+  'settings.close':'zár',
+  'settings.saveHelp':'Tedd el a kódot, és bármikor visszatöltheted — új telefonon is.',
+  'settings.copy':'Másolás',
+  'settings.load':'Visszatöltés',
+  'settings.lang':'Nyelv',
+  'settings.langNote':'Language',
+  'lang.label':'Nyelv · Language',
+  /* the note beside the heading is the other language's word, so its lang is that one */
+  'settings.langNoteLang':'en',
+  /* the one-time question is asked in both languages at once (see langAsk) */
+  'lang.ask.title':'Play in English?',
+  'lang.ask.sub':'Magyarul játszanál?',
+  'lang.switched':'A nyelvet bármikor átállíthatod a Beállításokban',
+  'settings.help':'Súgó',
+  'settings.rules':'Szabályok',
+  'settings.reset':'Haladás törlése',
+  /* toasts */
+  'toast.levelFailed':'Ez a szint nem állt össze',
+  'toast.twinTip':'Alatta ugyanez fekszik — koppints rá újra, és együtt eltűnnek',
+  'toast.autoShuffled':'Kevertem, mehet tovább',
+  'toast.noMoves':'Nincs több lépés — keverj!',
+  'toast.needCoins':'Még {=n} tallér kell',
+  'toast.bought':'+{q} — most {=n} van',
+  'toast.newRank':'Új rang: {rank}',
+  'toast.nextUnlock':'„{name}” {=n} tallérra',
+  'toast.maxed':'Ez már a csúcsán van',
+  'toast.upgraded':'{name} → {n|ord} fok',
+  'toast.lockedUntil':'Ez {n|az} {n|ord} szinten nyílik',
+  'toast.yours':'„{name}” a tiéd',
+  'toast.cannotShuffle':'Ezt a táblát már nem lehet megkeverni',
+  'toast.rescueTray':'Mentőöv — három csempe visszakerült a táblára',
+  'toast.rescueShuffle':'Mentőöv — megkevertem a maradékot',
+  'toast.wiped':'Minden nulláról indul',
+  'toast.viewReset':'Nézet visszaállítva',
+  'toast.musicLocal':'A zenefájl csak helyben futtatva szól',
+  'toast.copied':'Vágólapra másolva',
+  'toast.copyManually':'Jelöld ki, és másold ki kézzel',
+  'toast.saveLoaded':'Mentés visszatöltve',
+  'toast.achievement':'{name}',
+  'save.err.notCode':'Ez nem mentéskód.',
+  'save.err.corrupt':'A kód sérült vagy hiányos.',
+  'save.err.noLevel':'A kódból hiányzik a szint.',
+  /* assembled names, formats */
+  'gen.accentName':'{a} {b}',
+  'dur.hm':'{=h} ó {m} p',
+  'dur.m':'{m} p',
+  'dur.s':'{s} mp',
+  'dur.none':'—',
+  'format.dailyDate':'{yyyy}. {mm}. {dd}.'
+},
+/* English (British spelling, sentence case for the UI, Title Case for names). The game's own
+   words: Foresight (Jóslat), Vault (Tár), crowns (tallér), Quest, Triples, Lifeline, par.
+   Level numbers, years and days stay plain: they come in as strings, so G.num leaves them. */
+en:{
+  /* the page */
+  'meta.title':'Gyertyafény Mahjong',
+  /* the menu */
+  'brand.title':'Gyertyafény',
+  'brand.subtitle':'Mahjong',
+  'home.tagline':'Endless levels in an enchanted castle.',
+  'home.streakUnit':{one:'day',other:'days'},
+  'home.purseAria':'Crowns — open the Vault',
+  'home.settingsAria':'Settings',
+  'home.over':'{mode} · {rank}',
+  'home.level':'Level <span class="num">{n}</span>',
+  'home.starsAria':'stars',
+  'home.chapterLabel':'Chapter: {chap}',
+  'home.nextChapter':{one:'{n} level to <b>{rank}</b>',other:'{n} levels to <b>{rank}</b>'},
+  'home.allDone':'every level cleared',
+  'home.lastChapter':'the final chapter',
+  'home.packLine':'{pack}<span class="cs"> tiles</span> · {place}',
+  'home.kidLine':'{pack} · {place}',
+  'home.kidPictures':'Kids’ pictures',
+  'home.go.start':'Let’s begin',
+  'home.go.continue':'Continue',
+  'home.modesAria':'Mode',
+  'home.room.levels':'Levels',
+  'home.room.daily':'Daily',
+  'home.room.journal':'Journal',
+  'home.room.shop':'Vault',
+  'home.chip.levelsAll':'all levels',
+  'home.chip.levelsDone':'{=n} cleared',
+  'home.chip.dailyOpen':'open today',
+  'home.chip.dailyDone':'done today',
+  'home.chip.badges':'{got} / {total} badges',
+  'home.chip.shop':'{owned} / {total}',
+  /* header, toolbar, tray */
+  'header.levelAria':'Level',
+  'header.daily':'Daily',
+  'header.total':'{=n}',
+  'header.tilesLeft':'{left} of {total} tiles left',
+  'header.cleared':'{tiles} tiles · {pairs} pairs',
+  'header.clearedTray':'{tiles} tiles · {triples} triples',
+  'header.starsAria':'Stars',
+  'toolbar.menu':'Menu',
+  'toolbar.hint':'Foresight',
+  'toolbar.shuffle':'Shuffle',
+  'toolbar.shop':'Vault',
+  'toolbar.restart':'Restart',
+  'tray.aria':'Tray',
+  /* rules ("7-\u2060slot" here and in mode.tray.note: a word joiner, so "7-" never ends a line) */
+  'rules.title':'Rules',
+  'rules.r1':'Two <b>matching</b> tiles vanish together. You can only pick up a <b>free</b> tile: nothing lies on top of it, and its left or right side is open.',
+  'rules.r2':'If a tile lies on its own <b>twin</b>, tap the top one twice and both vanish together.',
+  'rules.r3':'Every level <b>can be cleared</b>. Finish quickly and without help to earn <b>3&nbsp;{star}</b>&nbsp;— the header shows them as you play.',
+  'rules.starAria':'stars',
+  'rules.r4':'Stuck? <b>Shuffle</b>. Out of shuffles? Buy a <b>lifeline</b> with crowns.',
+  'rules.r5':'<b>Foresights</b> and <b>shuffles</b> come from one supply shared by every level: you start with 3 of each, can buy more in the Vault, and get a free foresight every 5th level and a free shuffle every 10th.',
+  'rules.r6':'In <b>Triples</b> mode, each tile you pick goes onto the 7-\u2060slot tray. Three of a kind vanish together — if the tray fills up, you lose.',
+  'rules.r7':'In the <b>Vault</b> you unlock icon sets, tile styles and backdrops.',
+  'rules.ok':'Got it',
+  'common.backAria':'Back',
+  'common.lockAria':'locked',
+  /* Levels */
+  'levels.title':'Levels',
+  'levels.sub':{one:'{mode} · {=n} level cleared · <b>{=stars}</b>{star}',other:'{mode} · {=n} levels cleared · <b>{=stars}</b>{star}'},
+  'levels.go.continue':'Continue — level {n}',
+  'levels.chapterRange':'{a}–{z}',
+  'levels.chapterStars':'{got} / {max}',
+  'levels.now':'now',
+  /* the yes/no card */
+  'ask.defaultTitle':'Are you sure?',
+  'ask.defaultYes':'Yes',
+  'ask.no':'Cancel',
+  'ask.menu.title':'Back to the menu?',
+  'ask.menu.text':{one:'When you come back, the level starts over — the tile you’ve picked up will be lost.',other:'When you come back, the level starts over — the {n} tiles you’ve picked up will be lost.'},
+  'ask.menu.yes':'Main menu',
+  'ask.again.title':'Restart the level?',
+  'ask.again.text':{one:'You get the same board from the start — the tile you’ve picked up will be lost.',other:'You get the same board from the start — the {n} tiles you’ve picked up will be lost.'},
+  'ask.again.yes':'Restart',
+  'ask.buy.hintTitle':'Out of foresights',
+  'ask.buy.shufTitle':'Out of shuffles',
+  'ask.buy.text':{one:'3 for {price} crowns — you have {=n} crown. Bigger packs are in the Vault.',other:'3 for {price} crowns — you have {=n} crowns. Bigger packs are in the Vault.'},
+  'ask.buy.yes':'Buy them',
+  'ask.wipe.title':'Reset all progress?',
+  'ask.wipe.text':'Levels, crowns, your Vault collection, badges and the daily streak will all be lost. This can’t be undone — to keep them, first copy your save code under Save, above.',
+  'ask.wipe.yes':'Reset everything',
+  /* Daily challenge */
+  'daily.title':'Daily challenge',
+  'daily.intro':'One puzzle a day — and each day it’s the same for everyone.',
+  'daily.streak':'streak',
+  'daily.best':'longest',
+  'daily.total':'total',
+  'daily.go.today':'Play today’s puzzle',
+  'daily.go.again':'Replay today',
+  'daily.overLine':'Daily challenge · {date}',
+  'date.wd.0':'Mon',
+  'date.wd.1':'Tue',
+  'date.wd.2':'Wed',
+  'date.wd.3':'Thu',
+  'date.wd.4':'Fri',
+  'date.wd.5':'Sat',
+  'date.wd.6':'Sun',
+  'date.month.0':'January',
+  'date.month.1':'February',
+  'date.month.2':'March',
+  'date.month.3':'April',
+  'date.month.4':'May',
+  'date.month.5':'June',
+  'date.month.6':'July',
+  'date.month.7':'August',
+  'date.month.8':'September',
+  'date.month.9':'October',
+  'date.month.10':'November',
+  'date.month.11':'December',
+  /* Journal */
+  'journal.title':'Journal',
+  'journal.rankLine':{one:'{rank} · {=n} level behind you',other:'{rank} · {=n} levels behind you'},
+  'journal.stat.solved':'Levels cleared',
+  'journal.stat.advLevel':'Quest level',
+  'journal.stat.time':'Total play time',
+  'journal.stat.fastest':'Fastest level',
+  'journal.stat.perfect':'Three-star levels',
+  'journal.stat.stars':'Stars collected',
+  'journal.stat.streak':'Daily streak',
+  'journal.stat.bestStreak':'Longest streak',
+  'journal.stat.daily':'Daily puzzles',
+  'journal.stat.collection':'Collection',
+  'journal.collection':'{a}/{b}',
+  'journal.days':{one:'{=n} day',other:'{=n} days'},
+  'journal.badgesTitle':'Badges',
+  'journal.badgeCount':'{got} / {total} earned',
+  'journal.tapBadge':'Tap a badge.',
+  'journal.badgeInfo':'<b>{name}</b> — {desc}',
+  /* the level-complete letter */
+  'end.starsAria':'Stars',
+  'end.starsCountAria':{one:'{n} star',other:'{n} stars'},
+  'end.overLine':'Level {n} · {mode}',
+  'end.title.won':'Cleared',
+  'end.title.daily':'Solved for today',
+  'end.title.kid':'Well done!',
+  'end.title.trayFull':'The tray is full',
+  'end.title.stuck':'No more moves',
+  'end.record':'New best',
+  'end.par':'par {time}',
+  'end.best.time':'Your best time so far: {time}.',
+  'end.best.newStars':'New star record: {from} → {to} ★',
+  'end.best.prevStars':'Your best here: {stars}',
+  'end.text.dailyRepeat':'You’ve already solved today’s puzzle — your streak stays as it was.',
+  'end.text.kid':'You found every picture. Ready for the next one?',
+  'end.text.trayLost':'The tray is full: seven tiles, but no three alike. A lifeline puts the last three back on the board — or start the level again.',
+  'end.text.stuck':'The remaining tiles block each other, and the shuffles have run out. A lifeline lets you carry on where you left off — or start the level again; your progress is kept.',
+  'end.gain.level':'for the level',
+  'end.gain.replayStars':'{a} for the replay · {b} star bonus',
+  'end.gain.replay':'level replayed',
+  'end.gain.first':'{a} for the level · {b} for a first clear',
+  'end.gain.chest':'milestone chest',
+  'end.gain.streak':{one:'daily streak · {=n} day',other:'daily streak · {=n} days'},
+  'end.gain.hintAmt':'+1 foresight',
+  'end.gain.shufAmt':'+1 shuffle',
+  'end.gain.dailyGift':'a gift for the daily puzzle',
+  'end.gain.gift5':'a gift every 5th level',
+  'end.gain.gift10':'every 10th level',
+  'end.rescue':'Lifeline',
+  'end.next':'Next level',
+  'end.nextNum':'{n}',
+  'end.barAria':'More options',
+  'endbar.menu':'Menu',
+  'endbar.again':'Replay level',
+  'endbar.shop':'Vault',
+  /* the Vault */
+  'shop.title':'Vault',
+  'shop.tabsAria':'Vault sections',
+  'shop.tab.skin':'Tiles',
+  'shop.tab.pack':'Icons',
+  'shop.tab.bg':'Backdrop',
+  'shop.tab.upg':'Boosts',
+  'shop.sub':'{rank} · collection <b>{owned} / {total}</b>',
+  'shop.intro.skin':'The material and colour of the tiles on your table.',
+  'shop.intro.pack':'The pictures you collect in pairs.',
+  'shop.intro.bg':'What you see from the tower window, and the colour of your seal.',
+  'shop.intro.upg':'Foresights and shuffles for hard boards, and help that lasts.',
+  'shop.head.skin':'Tile style',
+  'shop.head.pack':'Icon set',
+  'shop.note.pack':'a new set deals a new board',
+  'shop.head.bg':'Scenery',
+  'shop.note.bg':'behind the board as you play',
+  'shop.owned':'{n} / {total} owned',
+  'shop.state.inUse':'In use',
+  'shop.state.owned':'Owned',
+  'shop.state.fromLevel':'From level {n}',
+  'shop.seal.head':'Seal colour',
+  'shop.seal.note':'frames, lines, seal',
+  'shop.seal.active':'Active',
+  'shop.upg.stockHead':'Supplies',
+  'shop.upg.stockNote':'you have {hints} · {shuffles}',
+  'count.hint':{one:'{=n} foresight',other:'{=n} foresights'},
+  'count.shuffle':{one:'{=n} shuffle',other:'{=n} shuffles'},
+  'shop.upg.head':'Upgrades',
+  'shop.upg.note':'permanent, for every level',
+  'shop.upg.progress':'{note} · {n} / {max}',
+  'shop.upg.maxed':'Maxed',
+  'aidpack.name':'{item} <span class="q">×{q}</span>',
+  'aidpack.item.hint':'Foresight',
+  'aidpack.item.shuf':'Shuffle',
+  /* Settings */
+  'settings.title':'Settings',
+  'settings.sound':'Sound',
+  'settings.sfx':'Sound effects',
+  'settings.music':'Background music',
+  'settings.saveHead':'Save',
+  'settings.save':'Back up or restore progress',
+  'settings.on':'on',
+  'settings.off':'off',
+  'settings.open':'open',
+  'settings.close':'close',
+  'settings.saveHelp':'Keep this code safe and you can restore your progress any time — even on a new phone.',
+  'settings.copy':'Copy',
+  'settings.load':'Restore',
+  'settings.lang':'Language',
+  'settings.langNote':'Nyelv',
+  'settings.langNoteLang':'hu',
+  'lang.label':'Language · Nyelv',
+  'lang.ask.title':'Play in English?',
+  'lang.ask.sub':'Magyarul játszanál?',
+  'lang.switched':'You can change the language any time in Settings',
+  'settings.help':'Help',
+  'settings.rules':'Rules',
+  'settings.reset':'Reset progress',
+  /* toasts */
+  'toast.levelFailed':'This level wouldn’t come together',
+  'toast.twinTip':'Its twin lies right beneath — tap it again and both vanish',
+  'toast.autoShuffled':'I’ve shuffled the tiles — carry on',
+  'toast.noMoves':'No moves left — shuffle!',
+  'toast.needCoins':{one:'You need {=n} more crown',other:'You need {=n} more crowns'},
+  'toast.bought':'+{q} — you now have {=n}',
+  'toast.newRank':'New rank: {rank}',
+  'toast.nextUnlock':{one:'“{name}” is {=n} crown away',other:'“{name}” is {=n} crowns away'},
+  'toast.maxed':'Already at the top tier',
+  'toast.upgraded':'{name} → tier {n}',
+  'toast.lockedUntil':'Unlocks at level {n}',
+  'toast.yours':'“{name}” is yours',
+  'toast.cannotShuffle':'This board can’t be shuffled any more',
+  'toast.rescueTray':'Lifeline — three tiles are back on the board',
+  'toast.rescueShuffle':'Lifeline — I’ve shuffled what was left',
+  'toast.wiped':'Everything starts afresh',
+  'toast.viewReset':'View reset',
+  'toast.musicLocal':'The music file only plays when the app runs locally',
+  'toast.copied':'Copied to clipboard',
+  'toast.copyManually':'Select the code and copy it by hand',
+  'toast.saveLoaded':'Progress restored',
+  'toast.achievement':'New badge: {name}',
+  'save.err.notCode':'This isn’t a save code.',
+  'save.err.corrupt':'The code is damaged or incomplete.',
+  'save.err.noLevel':'The code has no level in it.',
+  /* assembled names, formats */
+  'gen.accentName':'{a} {b}',
+  'dur.hm':'{=h} h {m} min',
+  'dur.m':'{m} min',
+  'dur.s':'{s} s',
+  'dur.none':'—',
+  'format.dailyDate':'{d} {month} {yyyy}',
+  /* the data tables' words, under the keys regData files the Hungarian ones by */
+  /* the tile styles (SKINS) */
+  'skin.sk0.name':'Parchment', 'skin.sk1.name':'Obsidian', 'skin.sk2.name':'Jade',
+  'skin.sk3.name':'Copper Steam', 'skin.sk4.name':'Ice Crystal', 'skin.sk5.name':'Embers',
+  'skin.sk6.name':'Moonsilver', 'skin.sk7.name':'Moss Stone', 'skin.sk8.name':'Juniper',
+  'skin.sk9.name':'Rust Red', 'skin.sk10.name':'Amethyst', 'skin.sk11.name':'Amber',
+  'skin.sk12.name':'Sea Green', 'skin.sk13.name':'Midnight Blue', 'skin.sk14.name':'Rose Quartz',
+  'skin.sk15.name':'Sandstone', 'skin.sk16.name':'Smoked Oak', 'skin.sk17.name':'Beeswax',
+  'skin.sk18.name':'Marble', 'skin.sk19.name':'Verdigris', 'skin.sk20.name':'Blood Orange',
+  'skin.sk21.name':'Night Violet', 'skin.sk22.name':'Pewter', 'skin.sk23.name':'Honey',
+  'skin.sk24.name':'Pine Green', 'skin.sk25.name':'Coral Red', 'skin.sk26.name':'Turquoise',
+  'skin.sk27.name':'Lavender', 'skin.sk28.name':'Terracotta', 'skin.sk29.name':'Mother-of-Pearl',
+  'skin.sk30.name':'Saffron', 'skin.sk31.name':'Malachite', 'skin.sk32.name':'Marsh Green',
+  'skin.sk33.name':'Sapphire', 'skin.sk34.name':'Ruby', 'skin.sk35.name':'Graphite',
+  'skin.sk36.name':'Stardust', 'skin.sk37.name':'Gold Leaf', 'skin.sk38.name':'Raven Black',
+  'skin.sk39.name':'Phoenix Feather',
+  /* the icon packs, by folder (PACKS) */
+  'pack.varazsloiskola.name':'Wizard School', 'pack.bestiarium.name':'Bestiary',
+  'pack.egbolt.name':'Skies', 'pack.bajitaltan.name':'Potions',
+  'pack.unnepi-asztal.name':'Festive Table', 'pack.kastelyi-tarak.name':'Castle Stores',
+  'pack.evszakok.name':'Seasons', 'pack.bal-es-muzsika.name':'Music and Dance',
+  'pack.konyvtar.name':'Library', 'pack.sarkanyfeszek.name':'Dragon’s Nest',
+  'pack.vandorok-es-tundek.name':'Wanderers and Elves', 'pack.torpok-kincse.name':'Dwarven Hoard',
+  'pack.szuperhosok.name':'Superheroes', 'pack.ejfeli-varos.name':'Midnight City',
+  'pack.oslenyek-volgye.name':'Primeval Valley',
+  /* the places (BGS) */
+  'bg.bg0.name':'Night Castle', 'bg.bg1.name':'Dark Forest', 'bg.bg2.name':'Great Hall',
+  'bg.bg3.name':'Lake Depths', 'bg.bg4.name':'Crimson Tower', 'bg.bg5.name':'Snowy Courtyard',
+  'bg.bg6.name':'Twilight Sky', 'bg.bg7.name':'Rusty Cellar', 'bg.bg8.name':'Green Glasshouse',
+  'bg.bg9.name':'Hall of Stars', 'bg.bg10.name':'Red Parlour', 'bg.bg11.name':'Golden Crypt',
+  'bg.bg12.name':'Blue Smoke', 'bg.bg13.name':'Moonlit Lake', 'bg.bg14.name':'Lilac Dawn',
+  'bg.bg15.name':'Misty Vale', 'bg.bg16.name':'Dragon’s Lair', 'bg.bg17.name':'Ice Hall',
+  'bg.bg18.name':'Mossy Crypt', 'bg.bg19.name':'Midnight', 'bg.bg20.name':'Sunset',
+  'bg.bg21.name':'Emerald Hall', 'bg.bg22.name':'Silver Mist', 'bg.bg23.name':'Glowing Hearth',
+  'bg.bg24.name':'Wanderers and Elves', 'bg.bg25.name':'Dwarven Hoard', 'bg.bg26.name':'Superheroes',
+  'bg.bg27.name':'Midnight City', 'bg.bg28.name':'Primeval Valley',
+  /* the seal colours, the two lines of a card (ACCS) */
+  'accent.default.a':'Amber', 'accent.default.b':'and gold', 'accent.crimson.a':'Crimson',
+  'accent.crimson.b':'and gold', 'accent.emerald.a':'Emerald', 'accent.emerald.b':'and silver',
+  'accent.sapphire.a':'Blue', 'accent.sapphire.b':'and bronze', 'accent.jet.a':'Yellow',
+  'accent.jet.b':'and black',
+  /* the upgrades, and the aid packs' notes (UPG, AIDPACKS) */
+  'upg.erszeny.name':'Growing Purse', 'upg.erszeny.note':'+6% crowns for every level',
+  'upg.ido.name':'Time-Winder', 'upg.ido.note':'+6% par time for the stars',
+  'aidpack.hint3.note':'shows one possible move',
+  'aidpack.hint10.note':'the big pack costs less apiece',
+  'aidpack.shuf3.note':'re-deals the remaining tiles',
+  'aidpack.shuf10.note':'the big pack costs less apiece',
+  /* the ranks, which also name the chapters (RANKS) */
+  'rank.0':'Candlelighter', 'rank.1':'Initiate', 'rank.2':'Parchment Turner', 'rank.3':'Owl Courier',
+  'rank.4':'Apprentice', 'rank.5':'Library Lodger', 'rank.6':'Night Owl', 'rank.7':'Cauldron Stirrer',
+  'rank.8':'Broomstick Balancer', 'rank.9':'Stargazer', 'rank.10':'Rune Reader',
+  'rank.11':'Herb Garden Warden', 'rank.12':'Cartographer', 'rank.13':'Keeper of Keys',
+  'rank.14':'Secret Passage Scout', 'rank.15':'Tower Dweller', 'rank.16':'Cauldron Master',
+  'rank.17':'Scroll Decipherer', 'rank.18':'Silver Wand', 'rank.19':'Master of Rites',
+  'rank.20':'Crystal Gazer', 'rank.21':'Griffin Tamer', 'rank.22':'Egg Minder', 'rank.23':'Stormwise',
+  'rank.24':'Gatekeeper', 'rank.25':'Pride of the Hall', 'rank.26':'Gold Seal Scholar',
+  'rank.27':'Night Sentinel', 'rank.28':'Star Chart Maker', 'rank.29':'Sage of Old Tomes',
+  'rank.30':'Moonsilver Bearer', 'rank.31':'Ember Strider', 'rank.32':'Mirror Walker',
+  'rank.33':'Time Bender', 'rank.34':'Ruler of the Spire', 'rank.35':'Evercandle Keeper',
+  'rank.36':'Castle Legend', 'rank.37':'Master of Midnight', 'rank.38':'Grand Candlemaster',
+  'rank.39':'Undying Flamekeeper',
+  /* the modes (MODES) */
+  'mode.adv.name':'Quest', 'mode.adv.note':'A thousand levels, with stars and crowns.',
+  'mode.mem.name':'Memory',
+  'mode.mem.note':'The tiles lie face down — turn them over and remember them.', 'mode.zen.name':'Zen',
+  'mode.zen.note':'No clock and no getting stuck. Foresights and shuffles are unlimited.',
+  'mode.kid.name':'Kids',
+  'mode.kid.note':'A few big pictures, and you can always see which tiles are free to pick.',
+  'mode.tray.name':'Triples',
+  'mode.tray.note':'Collect three of a kind on the 7-\u2060slot tray. If it fills up, you lose.',
+  'mode.daily.name':'Daily',
+  /* the badges (ACH) */
+  'ach.first.name':'First Light', 'ach.first.desc':'Clear your first level',
+  'ach.ten.name':'Apprentice', 'ach.ten.desc':'10 levels cleared', 'ach.fifty.name':'Keeper of Keys',
+  'ach.fifty.desc':'50 levels cleared', 'ach.hund.name':'Castle Dweller',
+  'ach.hund.desc':'100 levels cleared', 'ach.perf.name':'Flawless',
+  'ach.perf.desc':'Your first three-star level', 'ach.perf25.name':'Astronomer',
+  'ach.perf25.desc':'25 three-star levels', 'ach.fast.name':'Lightning Hands',
+  'ach.fast.desc':'A level in under 90 seconds', 'ach.hour.name':'Spellbound',
+  'ach.hour.desc':'One hour of total play', 'ach.coin.name':'Treasurer',
+  'ach.coin.desc':'Hold 1,000 crowns at once', 'ach.coll.name':'Collector',
+  'ach.coll.desc':'10 items from the Vault', 'ach.lvl100.name':'Top of the Tower',
+  'ach.lvl100.desc':'Reach Quest level 100', 'ach.d3.name':'Daily Ritual',
+  'ach.d3.desc':'A 3-day streak', 'ach.d7.name':'Steadfast', 'ach.d7.desc':'A 7-day streak',
+  'ach.d30.name':'Master of Midnight', 'ach.d30.desc':'A 30-day streak', 'ach.mem.name':'Remembrancer',
+  'ach.mem.desc':'Clear a Memory level', 'ach.zen.name':'Serenity',
+  'ach.zen.desc':'10 Zen levels cleared',
+  /* the parts of a level's name: shapes, builds, terraces */
+  'shape.teknos':'Turtle', 'shape.gula':'Pyramid', 'shape.rombusz':'Diamond',
+  'shape.holdkorong':'Full Moon', 'shape.kereszt':'Cross', 'shape.homokora':'Hourglass',
+  'shape.kapu':'Gate', 'shape.gyuru':'Ring', 'shape.pillango':'Butterfly', 'shape.nyilhegy':'Arrowhead',
+  'shape.lepcso':'Staircase', 'shape.korona':'Crown', 'shape.csillag':'Star',
+  'shape.holdsarlo':'Crescent', 'shape.hullam':'Wave', 'shape.sziv':'Heart', 'shape.pajzs':'Shield',
+  'shape.bastya':'Bastion', 'shape.fogaskerek':'Cogwheel', 'shape.szarnyak':'Wings',
+  'shape.racs':'Lattice', 'shape.andraskereszt':'Saltire', 'shape.kehely':'Chalice',
+  'shape.orveny':'Whirlpool', 'build.lapos':'flat', 'build.torony':'tower', 'build.melyseg':'depths',
+  'terrace.gerinc':'ridge', 'terrace.ikertorony':'turrets', 'terrace.kupola':'dome',
+  'terrace.perem':'rim'
+}};
+const GRAM={
+  hu:{
+    /* thousands set apart by a no-break space, as the mockups show them ("1 284") */
+    num:n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00a0'),
+    cnt:n=>String(n),
+    plural:()=>'other',
+    /* a level or a step as an ordinal: "41." (printed plainly, as a level number always is) */
+    ord:n=>n+'.',
+    /* "92-ből", "76-ból": the ending follows the vowels of the number's last spoken word
+       (kettő, hat; tíz, húsz; száz, ezer), so a fixed "-ból" was wrong for half the boards */
+    fromEnd:n=>{ n=+n; const u=n%10, d=(n/10|0)%10;
+      if(u) return '368'.includes(u)?'ból':'ből';
+      if(d) return '2368'.includes(d)?'ból':'ből';
+      return n%1000||!n?'ból':'ből'; },
+    /* the article before a number goes by how the number is read: "az" before a vowel
+       (egy, öt, ötven, ötszáz, ezer…), so "az 50. szinten", "a 100. szinten" */
+    az:n=>{ n=+n; return n===1||/^5/.test(n)||(n>=1000&&n<2000)?'az':'a'; }
+  },
+  en:{
+    /* a comma from four digits ("1,284"), for money and for counts alike; a level number,
+       a year or a day comes in as a string and stays as it is ("Level 1000") */
+    num:n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','),
+    cnt:n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','),
+    /* 0 takes the plural too: "0 crowns" */
+    plural:n=>+n===1?'one':'other',
+    /* the templates say "Level 41"; a true ordinal is written where English wants one
+       ("every 5th level"), and this one is for a template that needs it computed */
+    ord:n=>{ n=+n; const h=n%100, u=n%10;
+      return n+(h>10&&h<14?'th':u===1?'st':u===2?'nd':u===3?'rd':'th'); }
+  }
+};
+/* The language of the page, a device setting (gm_lang, not part of the save code). Without
+   one: whoever has played here before (any other gm_ key) keeps the Hungarian the game always
+   had; a new install follows the phone, Hungarian if any of its languages is, else English,
+   and is then asked once (askLang, see langAsk). The choice is stored at once, or the first
+   level's progress would make a new player look like a returning one on the next start. */
+let lang=load('gm_lang',''), askLang=false;
+if(!STR[lang]){
+  let old=false, hu=false;
+  try{ for(let i=0;i<localStorage.length;i++) if(/^gm_(?!lang)/.test(localStorage.key(i))){ old=true; break; } }catch(e){}
+  try{ hu=[...(navigator.languages||[]),navigator.language||''].some(l=>/^hu\b/i.test(l)); }catch(e){}
+  lang=old||hu?'hu':'en'; askLang=!old&&!hu&&!load('gm_langask','');
+  save('gm_lang',lang);
+}
+let G=GRAM[lang];
+document.documentElement.lang=lang;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+function tr(key,p,html){
+  let s=STR[lang][key]??STR.hu[key];
+  if(s==null) return key;
+  if(typeof s==='object') s=s[G.plural(p&&p.n)]??s.other;
+  if(!p) return s;
+  return s.replace(/\{(=?)(\w+)(?:\|(\w+))?\}/g,(m,c,k,f)=>{
+    if(!(k in p)) return m;
+    let v=p[k];
+    if(v&&v.html!=null) return v.html;          /* markup built here: an icon, a slot */
+    v=f?G[f](v):typeof v==='number'?(c?G.cnt:G.num)(v):v;
+    return html?esc(v):v;
+  });
+}
+const t=(key,p)=>tr(key,p,false);
+/* for innerHTML: the template's markup is our own, its params are escaped */
+const th=(key,p)=>tr(key,p,true);
+/* A template with live elements in its slots: each keeps its node (its id, and the code
+   that writes into it, e.g. refresh() into #uiLeft), the words around it are the
+   template's. */
+function fill(el,key,slots,p){
+  const q=Object.assign({},p);
+  for(const k in slots) q[k]={html:'<i data-slot="'+k+'"></i>'};
+  el.innerHTML=th(key,q);
+  /* a slot the template leaves out stays in the page unseen, for the code that writes into it */
+  for(const k in slots){ const ph=el.querySelector('[data-slot="'+k+'"]'), n=slots[k];
+    n.hidden=!ph; if(ph) ph.replaceWith(n); else el.appendChild(n); }
+}
+/* an element's own words: the text beside its icon (its first text node), else all of it */
+function setText(e,s){
+  for(const n of e.childNodes) if(n.nodeType===3&&n.data.trim()){ if(n.data!==s) n.data=s; return; }
+  e.textContent=s;
+}
+/* The words written in the page itself: data-i18n (its text), data-i18n-aria (its
+   aria-label), data-i18n-html (rich text, the rules), data-i18n-lang (the lang of a word
+   that is in the other language), and the lines whose live numbers sit among the words.
+   What the code writes (cards, chips, pages) it writes through t(). */
+function applyStatic(){
+  document.documentElement.lang=lang; document.documentElement.classList.remove('pend'); document.title=t('meta.title');
+  for(const e of document.querySelectorAll('[data-i18n]')) setText(e,t(e.dataset.i18n));
+  for(const e of document.querySelectorAll('[data-i18n-aria]')) e.setAttribute('aria-label',t(e.dataset.i18nAria));
+  for(const e of document.querySelectorAll('[data-i18n-lang]')) e.lang=t(e.dataset.i18nLang);
+  const star={html:'<svg class="st" viewBox="-5 -5 10 10" aria-label="'+esc(t('rules.starAria'))+'">'+STAR_PATH+'</svg>'};
+  for(const e of document.querySelectorAll('[data-i18n-html]')) e.innerHTML=th(e.dataset.i18nHtml,{star});
+  fill($('uiSub'),'header.tilesLeft',{left:$('uiLeft'),total:$('uiTotal')});
+  fill($('hsHead'),'home.level',{n:$('hsLevel')});
+  fill($('hsChapLab'),'home.chapterLabel',{chap:$('hsChap')});
+}
+/* The data tables keep their Hungarian words inline: they are the HU strings, filed here
+   under keys by item id (a pack by its folder, a rank by its index), so the UI reads every
+   name through t(). Called once, when every table is in place. */
+function regData(){
+  const S=STR.hu;
+  for(const k in SKINS) S['skin.'+k+'.name']=SKINS[k].name;
+  for(const k in PACKS) S['pack.'+PACKS[k].id+'.name']=PACKS[k].name;
+  for(const k in BGS) S['bg.'+k+'.name']=BGS[k].name;
+  for(const k in ACCS){ const a=ACCS[k]; S['accent.'+a.k+'.a']=a.a; S['accent.'+a.k+'.b']=a.b; }
+  for(const k in UPG){ S['upg.'+k+'.name']=UPG[k].name; S['upg.'+k+'.note']=UPG[k].note; }
+  for(const p of AIDPACKS) S['aidpack.'+p.id+'.note']=p.note;
+  RANKS.forEach((r,i)=>{ S['rank.'+i]=r; });
+  for(const k in MODES){ S['mode.'+k+'.name']=MODES[k].n; if(MODES[k].note) S['mode.'+k+'.note']=MODES[k].note; }
+  for(const a of ACH){ S['ach.'+a.k+'.name']=a.n; S['ach.'+a.k+'.desc']=a.d; }
+  for(const s of SHAPES) S['shape.'+s.id]=s.n;
+  for(const b of BUILDS) if(b.id) S['build.'+b.id]=b.n;
+  for(const x of TERRACES) if(x) S['terrace.'+x.id]=x.n;
+}
+/* a Tár item's name by its key (sk…, pk…, bg…, ac…) */
+function itemName(k){
+  if(ACCS[k]){ const a=ACCS[k].k; return t('gen.accentName',{a:t('accent.'+a+'.a'),b:t('accent.'+a+'.b')}); }
+  return t(SKINS[k]?'skin.'+k+'.name':PACKS[k]?'pack.'+PACKS[k].id+'.name':'bg.'+k+'.name');
+}
+/* the daily's date as the language writes it; its key stays YYYY-MM-DD (it seeds the puzzle) */
+function dailyDate(k){
+  return t('format.dailyDate',{yyyy:k.slice(0,4),mm:k.slice(5,7),dd:k.slice(8),d:String(+k.slice(8)),month:t('date.month.'+(k.slice(5,7)-1))});
+}
+/* the language row of the settings: a segment per language that has a table, each named
+   in itself, whatever the page's language */
+const LANG_NAME={hu:'Magyar',en:'English'};
+function drawLangs(){
+  $('langSeg').innerHTML=Object.keys(STR).map(l=>'<button role="radio" lang="'+l+'" aria-checked="'+(l===lang)+'"'+(l===lang?' class="on"':'')+'>'+LANG_NAME[l]+'</button>').join('');
+}
+/* A change of language, at once and in place: every word on screen is written again from
+   the tables (the page's own words, the purses, the menu, an open page, the level's header,
+   the letter), and the level itself, its deal, clock and stars, is left as it is. A toast
+   still up (an unlock tip from the letter just closed) goes: its words are the old
+   language's. The yes/no card is modal, so it is never open under this. */
+function setLang(l){
+  if(!STR[l]) return;
+  langAnswered();
+  if(l===lang) return;
+  lang=l; G=GRAM[l]; save('gm_lang',l);
+  const ts=$('toast'); if(ts.classList.contains('on')){ clearTimeout(ts._h); ts.classList.remove('on'); }
+  applyStatic(); drawLangs(); syncSwitches(); setCoins(coins);
+  const on=id=>$(id).classList.contains('on');
+  /* the menu only while it is up: refreshStart sets the mode and level it shows, which a
+     level being played (a daily, an old level from the map) must keep */
+  if(on('veilStart')) refreshStart();
+  if(tiles.length){
+    headName(lvName); $('uiTotal').textContent=t('header.total',{n:total});
+    $('uiShape').style.fontSize=''; fitHead();
+  }
+  /* the parchment is sized to its words */
+  if(on('veilEnd')&&endDoc){ renderEnd(false); endSheet(); }
+  if(on('veilShop')) drawShop();
+  if(on('veilLevels')) drawLevels(true);
+  if(on('veilDaily')) drawDaily();
+  if(on('veilStats')) drawStats(true);
+}
+/* The one-time question (askLang): a new install that the phone's language put in English
+   is asked whether to play in English, in both languages at once, so a Hungarian player on
+   an English phone finds Magyar without reading a word of English. It stands in for the
+   rooms at the foot of the menu (.asking) until it is answered, or the language is picked
+   in the settings, and it is asked once: gm_langask is kept from the moment it shows. */
+function langAsk(){
+  const a=$('langAsk');
+  for(const b of a.querySelectorAll('button')) b.textContent=LANG_NAME[b.dataset.lang];
+  a.hidden=false; a.parentNode.classList.add('asking'); save('gm_langask','1');
+  a.onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+    setLang(b.dataset.lang); toast(t('lang.switched')); beep('tap'); };
+}
+/* the rooms come back, and the window is laid out for them */
+function langAnswered(){
+  const a=$('langAsk'); if(a.hidden) return;
+  a.hidden=true; a.parentNode.classList.remove('asking'); queueScene();
+}
 
 /* a drawn pack lives in packs/<folder>/01.webp … 36.webp; to turn an emoji pack into
    pictures, drop the files in and swap its list for imgPack('<folder>') */
@@ -1512,7 +2414,8 @@ const RANKS=[
  'Holdezüst viselője','Parázsléptű','Tükörjáró','Idővel bíró','Toronycsúcs ura',
  'Örökgyertya őrzője','Kastély legendája','Éjfél mestere','Gyertyafény nagymestere','Halhatatlan lángőr'
 ];
-const rankOf=lv=>RANKS[Math.min(RANKS.length-1, Math.floor((lv-1)/25))];
+/* a level's rank, as its index (its name: t('rank.'+i)) */
+const rankOf=lv=>Math.min(RANKS.length-1, Math.floor((lv-1)/25));
 
 /* ================= mentett állapot ================= */
 const $=id=>document.getElementById(id);
@@ -1550,17 +2453,17 @@ if(!inv||typeof inv!=='object'||!(inv.hint>=0)||!(inv.shuf>=0)){
 }
 delete upg.tipp; delete upg.kever;
 const saveInv=()=>save('gm_inv',JSON.stringify(inv));
-/* what the Tár sells; the bigger pack is cheaper per piece */
+/* what the Tár sells; the bigger pack is cheaper per piece. A pack's name is its item and
+   ×q (see drawUpg), built from those parts */
 const AIDPACKS=[
-  {k:'hint', q:3,  price:150, n:'Jóslat ×3',   note:'megmutat egy lehetséges lépést'},
-  {k:'hint', q:10, price:420, n:'Jóslat ×10',  note:'a nagy csomag olcsóbb darabonként'},
-  {k:'shuf', q:3,  price:240, n:'Keverés ×3',  note:'újraosztja a maradék csempéket'},
-  {k:'shuf', q:10, price:680, n:'Keverés ×10', note:'a nagy csomag olcsóbb darabonként'}
+  {k:'hint', q:3,  price:150, id:'hint3',  note:'megmutat egy lehetséges lépést'},
+  {k:'hint', q:10, price:420, id:'hint10', note:'a nagy csomag olcsóbb darabonként'},
+  {k:'shuf', q:3,  price:240, id:'shuf3',  note:'újraosztja a maradék csempéket'},
+  {k:'shuf', q:10, price:680, id:'shuf10', note:'a nagy csomag olcsóbb darabonként'}
 ];
 for(const k in UPG) if(!(k in upg)) upg[k]=0;
 const saveUpg=()=>save('gm_upg',JSON.stringify(upg));
 const coinMult=()=>1+.06*upg.erszeny, parMult=()=>1+.06*upg.ido;
-let lastRank=load('gm_rank','');
 let sfxOn=load('gm_sfx','1')==='1', musicOn=load('gm_music','0')==='1';
 const MODES={
   adv:  {n:'Kaland',       note:'Ezer szint, csillagokkal és tallérral.'},
@@ -1572,6 +2475,14 @@ const MODES={
 };
 const LVKEY={adv:'gm_level',mem:'gm_mem_level',zen:'gm_zen_level',kid:'gm_kid_level',tray:'gm_tray_level'};
 const lvOf=m=>Math.max(1,parseInt(load(LVKEY[m]||'gm_level','1'),10)||1);
+/* gm_rank: the index of the rank last announced. It held the Hungarian name until the
+   i18n layer, and old devices and old save codes still do: a name is mapped back through
+   the HU list, one no longer in it to the rank held now (no false "Új rang" toast) */
+let lastRank=load('gm_rank','');
+if(lastRank&&!/^\d+$/.test(lastRank)){
+  const i=RANKS.indexOf(lastRank);
+  lastRank=String(i>=0?i:rankOf(lvOf('adv'))); save('gm_rank',lastRank);
+}
 let mode=LVKEY[load('gm_mode','adv')]?load('gm_mode','adv'):'adv';
 let level=lvOf(mode);
 let SYMBOLS=(PACKS[curPack]||PACKS.pk0).s;
@@ -1662,7 +2573,7 @@ function checkAch(){
   for(const a of ACH) if(got.indexOf(a.k)<0&&a.f(s)){ got.push(a.k); fresh.push(a); }
   if(!fresh.length) return;
   save('gm_ach',JSON.stringify(got));
-  fresh.forEach((a,i)=>setTimeout(()=>toast(a.n,ACH_ICON[a.k]),2400+i*2300));
+  fresh.forEach((a,i)=>setTimeout(()=>toast(t('toast.achievement',{name:t('ach.'+a.k+'.name')}),ACH_ICON[a.k]),2400+i*2300));
 }
 
 function applyStyles(){
@@ -1678,8 +2589,8 @@ function applyStyles(){
   buildScene();
   if($('veilEnd').classList.contains('on')) endSheet();
 }
-/* thousands set apart by a no-break space, as the mockups show them ("1 284") */
-const fmtN=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00a0');
+/* money and amounts, grouped as the language groups them (see GRAM) */
+const fmtN=n=>G.num(n);
 function setCoins(n,anim){
   coins=Math.max(0,n); save('gm_coins',coins);
   $('uiCoins').textContent=$('shopCoins').textContent=$('hsCoins').textContent=fmtN(coins);
@@ -1700,57 +2611,58 @@ function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0;
   return ((t^t>>>14)>>>0)/4294967296; };}
 function shf(rnd,a){ for(let i=a.length-1;i>0;i--){ const j=rnd()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
 const SHAPES=[
-  {n:'Teknős',f:(u,v)=>Math.abs(v-.5)<.42||Math.abs(u-.5)<.45},
-  {n:'Gúla',f:()=>true},
-  {n:'Rombusz',f:(u,v)=>Math.abs(u-.5)+Math.abs(v-.5)<=.52},
-  {n:'Holdkorong',f:(u,v)=>((u-.5)**2*4+(v-.5)**2*4)<=1.02},
-  {n:'Kereszt',f:(u,v)=>Math.abs(u-.5)<.23||Math.abs(v-.5)<.26},
-  {n:'Homokóra',f:(u,v)=>Math.abs(u-.5)<=.16+.34*Math.abs(2*v-1)},
-  {n:'Kapu',f:(u,v)=>!(Math.abs(u-.5)<.24&&v>.34)},
-  {n:'Gyűrű',f:(u,v)=>!(Math.abs(u-.5)<.20&&Math.abs(v-.5)<.24)},
-  {n:'Pillangó',f:(u,v)=>Math.abs(u-.5)>=.06&&(Math.abs(u-.5)+Math.abs(v-.5)*.6)<=.5},
-  {n:'Nyílhegy',f:(u,v)=>v<.55?Math.abs(u-.5)<=v*.85+.12:Math.abs(u-.5)<=(1-v)*1.5+.05},
-  {n:'Lépcső',f:(u,v)=>u<=.25+v*.75&&u>=v*.18},
-  {n:'Korona',f:(u,v)=>v>.42||Math.abs(((u*5)%1)-.5)<.30},
-  {n:'Csillag',f:(u,v)=>{ const a=Math.atan2(v-.5,u-.5), r=Math.hypot(u-.5,v-.5);
+  {id:'teknos',n:'Teknős',f:(u,v)=>Math.abs(v-.5)<.42||Math.abs(u-.5)<.45},
+  {id:'gula',n:'Gúla',f:()=>true},
+  {id:'rombusz',n:'Rombusz',f:(u,v)=>Math.abs(u-.5)+Math.abs(v-.5)<=.52},
+  {id:'holdkorong',n:'Holdkorong',f:(u,v)=>((u-.5)**2*4+(v-.5)**2*4)<=1.02},
+  {id:'kereszt',n:'Kereszt',f:(u,v)=>Math.abs(u-.5)<.23||Math.abs(v-.5)<.26},
+  {id:'homokora',n:'Homokóra',f:(u,v)=>Math.abs(u-.5)<=.16+.34*Math.abs(2*v-1)},
+  {id:'kapu',n:'Kapu',f:(u,v)=>!(Math.abs(u-.5)<.24&&v>.34)},
+  {id:'gyuru',n:'Gyűrű',f:(u,v)=>!(Math.abs(u-.5)<.20&&Math.abs(v-.5)<.24)},
+  {id:'pillango',n:'Pillangó',f:(u,v)=>Math.abs(u-.5)>=.06&&(Math.abs(u-.5)+Math.abs(v-.5)*.6)<=.5},
+  {id:'nyilhegy',n:'Nyílhegy',f:(u,v)=>v<.55?Math.abs(u-.5)<=v*.85+.12:Math.abs(u-.5)<=(1-v)*1.5+.05},
+  {id:'lepcso',n:'Lépcső',f:(u,v)=>u<=.25+v*.75&&u>=v*.18},
+  {id:'korona',n:'Korona',f:(u,v)=>v>.42||Math.abs(((u*5)%1)-.5)<.30},
+  {id:'csillag',n:'Csillag',f:(u,v)=>{ const a=Math.atan2(v-.5,u-.5), r=Math.hypot(u-.5,v-.5);
     return r<=.17+.29*Math.abs(Math.cos(2.5*a)); }},
-  {n:'Holdsarló',f:(u,v)=>((u-.5)**2*4+(v-.5)**2*3.6)<=1 && !(((u-.76)**2*4.6+(v-.5)**2*3.0)<=1)},
-  {n:'Hullám',f:(u,v)=>Math.abs(v-.5-.21*Math.sin(u*Math.PI*2.2))<=.26},
-  {n:'Szív',f:(u,v)=>{ const x=(u-.5)*2.5, y=(.64-v)*2.5;
+  {id:'holdsarlo',n:'Holdsarló',f:(u,v)=>((u-.5)**2*4+(v-.5)**2*3.6)<=1 && !(((u-.76)**2*4.6+(v-.5)**2*3.0)<=1)},
+  {id:'hullam',n:'Hullám',f:(u,v)=>Math.abs(v-.5-.21*Math.sin(u*Math.PI*2.2))<=.26},
+  {id:'sziv',n:'Szív',f:(u,v)=>{ const x=(u-.5)*2.5, y=(.64-v)*2.5;
     return (x*x+y*y-1)**3 - x*x*y*y*y <= 0; }},
-  {n:'Pajzs',f:(u,v)=>v<=.52 ? Math.abs(u-.5)<=.40 : Math.abs(u-.5)<=.40*(1-(v-.52)/.52*.92)},
-  {n:'Bástya',f:(u,v)=>v>.60 ? Math.abs(u-.5)<=.44
+  {id:'pajzs',n:'Pajzs',f:(u,v)=>v<=.52 ? Math.abs(u-.5)<=.40 : Math.abs(u-.5)<=.40*(1-(v-.52)/.52*.92)},
+  {id:'bastya',n:'Bástya',f:(u,v)=>v>.60 ? Math.abs(u-.5)<=.44
     : (Math.abs(u-.5)<=.28 && (v>.20 || Math.abs(((u*6)%1)-.5)<.30))},
-  {n:'Fogaskerék',f:(u,v)=>{ const a=Math.atan2(v-.5,u-.5), r=Math.hypot(u-.5,v-.5);
+  {id:'fogaskerek',n:'Fogaskerék',f:(u,v)=>{ const a=Math.atan2(v-.5,u-.5), r=Math.hypot(u-.5,v-.5);
     return r>=.11 && r<=(Math.cos(8*a)>0?.44:.33); }},
-  {n:'Szárnyak',f:(u,v)=>Math.abs(u-.5)<=.05
+  {id:'szarnyak',n:'Szárnyak',f:(u,v)=>Math.abs(u-.5)<=.05
     || ((u-.26)**2*10+(v-.5)**2*4.2)<=1 || ((u-.74)**2*10+(v-.5)**2*4.2)<=1},
-  {n:'Rács',f:(u,v)=>Math.abs(((u*4)%1)-.5)<.33 || Math.abs(((v*3)%1)-.5)<.33},
-  {n:'Andráskereszt',f:(u,v)=>Math.abs(u-v)<.19 || Math.abs(u+v-1)<.19},
-  {n:'Kehely',f:(u,v)=>v<.26 ? Math.abs(u-.5)<=.34
+  {id:'racs',n:'Rács',f:(u,v)=>Math.abs(((u*4)%1)-.5)<.33 || Math.abs(((v*3)%1)-.5)<.33},
+  {id:'andraskereszt',n:'Andráskereszt',f:(u,v)=>Math.abs(u-v)<.19 || Math.abs(u+v-1)<.19},
+  {id:'kehely',n:'Kehely',f:(u,v)=>v<.26 ? Math.abs(u-.5)<=.34
     : v<.58 ? Math.abs(u-.5)<=.34-(v-.26)*.80
     : v<.82 ? Math.abs(u-.5)<=.08 : Math.abs(u-.5)<=.30},
-  {n:'Örvény',f:(u,v)=>{ const d=Math.max(Math.abs(u-.5),Math.abs(v-.5));
+  {id:'orveny',n:'Örvény',f:(u,v)=>{ const d=Math.max(Math.abs(u-.5),Math.abs(v-.5));
     return d<=.5 && Math.abs(((d*5)%1)-.5)<.30; }}
 ];
 /* Terrace rules: from layer 1 up, a tile also has to pass this test. Without one
    the stack is a plain eroded pyramid; with one it grows ridges, twin towers or domes. */
 const TERRACES=[
   null,
-  {n:'gerinc', f:(u,v,l)=>Math.abs(v-.5) < .5-l*.07},
-  {n:'ikertorony', f:(u,v,l)=>l<2 || Math.abs(u-.5)>.10},
-  {n:'kupola', f:(u,v,l)=>((u-.5)**2+(v-.5)**2) < .27-l*.035},
-  {n:'perem', f:(u,v,l)=>l<2 || Math.max(Math.abs(u-.5),Math.abs(v-.5))>.16}
+  {id:'gerinc',     n:'gerinc',     f:(u,v,l)=>Math.abs(v-.5) < .5-l*.07},
+  {id:'ikertorony', n:'ikertorony', f:(u,v,l)=>l<2 || Math.abs(u-.5)>.10},
+  {id:'kupola',     n:'kupola',     f:(u,v,l)=>((u-.5)**2+(v-.5)**2) < .27-l*.035},
+  {id:'perem',      n:'perem',      f:(u,v,l)=>l<2 || Math.max(Math.abs(u-.5),Math.abs(v-.5))>.16}
 ];
 /* Build styles: how the layers pile up. A flat build spreads wide with few
    layers, a tower keeps a small footprint and drills deep — same tile count,
    but the tower's tiles are far bigger on a phone screen. */
 const BUILDS=[
-  {n:'lapos',   maxW:11, maxH:13, lay:3,  keep:.52, nb:3},
-  {n:'',        maxW:10, maxH:13, lay:6,  keep:.66, nb:3},
-  {n:'torony',  maxW:9,  maxH:12, lay:10, keep:.80, nb:2},
-  {n:'mélység', maxW:8,  maxH:11, lay:14, keep:.86, nb:2}
+  {id:'lapos',   n:'lapos',   maxW:11, maxH:13, lay:3,  keep:.52, nb:3},
+  {id:'',        n:'',        maxW:10, maxH:13, lay:6,  keep:.66, nb:3},
+  {id:'torony',  n:'torony',  maxW:9,  maxH:12, lay:10, keep:.80, nb:2},
+  {id:'melyseg', n:'mélység', maxW:8,  maxH:11, lay:14, keep:.86, nb:2}
 ];
+regData();   /* every data table is in place by now (see i18n) */
 function stack(m,W,H,maxL,ter,keep,nb){
   let cur=[];
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
@@ -1817,16 +2729,16 @@ function buildLevel(seed,plain,diff){
   pos.sort((a,b)=>b.l-a.l||b.y-a.y||b.x-a.x);
   while(pos.length%2) pos.shift();
   pos.sort((a,b)=>a.l-b.l||a.y-b.y||a.x-b.x);
-  /* one modifier in the name at most, so the header stays readable */
-  return {pos,name:sh.n+(bld2.n?' · '+bld2.n:(ter?' · '+ter.n:'')),rnd};
+  /* the name by its parts (see headName): one modifier at most, so the header stays readable */
+  return {pos,shape:sh.id,mod:bld2.id?'build.'+bld2.id:ter?'terrace.'+ter.id:'',rnd};
 }
 
 /* ---- Gyerek mód ----
    Small boards, few and familiar pictures, and at most three shallow layers
    that step in clearly, so a child can see at a glance what is on top. Only
    the plain, chunky shapes — no rings or lattices to decode. */
-const KID_SHAPES=['Holdkorong','Szív','Rombusz','Gúla','Teknős','Kereszt','Pajzs','Csillag','Homokóra','Kapu']
-  .map(n=>SHAPES.find(s=>s.n===n)).filter(Boolean);
+const KID_SHAPES=['holdkorong','sziv','rombusz','gula','teknos','kereszt','pajzs','csillag','homokora','kapu']
+  .map(id=>SHAPES.find(s=>s.id===id));
 const KID_SYMBOLS=imgPack('gyerek',22);
 function buildKid(lv){
   const rnd=mulberry32((lv*2246822519)^0x2F6B1D);
@@ -1847,7 +2759,7 @@ function buildKid(lv){
   pos.sort((a,b)=>b.l-a.l||b.y-a.y||b.x-a.x);
   while(pos.length%2) pos.shift();
   pos.sort((a,b)=>a.l-b.l||a.y-b.y||a.x-b.x);
-  return {pos,name:sh.n,rnd};
+  return {pos,shape:sh.id,mod:'',rnd};
 }
 /* few kinds of picture: four on the first levels, never more than ten */
 const kidCount=lv=>Math.min(10,4+Math.floor(lv/4));
@@ -1995,6 +2907,9 @@ function dealSolvable(P,R,sc,rnd,pool){
 let P=[],R=null,tiles=[],present=[],sel=null,total=0;
 let hints=3,shuffles=2,usedAid=0,par=0,t0=0,timer=null,running=false,memLock=false;
 let rescues=0, lastBanked=0;
+/* the level's name by its parts, for the header (see headName); kept, so the header can be
+   written again in another language */
+let lvName=null;
 /* every lifeline inside the same level costs more than the one before */
 const rescueCost=()=>Math.round(150*Math.pow(1.8,rescues));
 const board=$('board'), stage=$('stage');
@@ -2034,7 +2949,7 @@ function startLevel(n,depth){
     if(syms) break;
   }
   if(!syms){
-    if(!daily&&n>1&&(depth||0)<4){ toast('Ez a szint nem állt össze'); startLevel(n-1,(depth||0)+1); return; }
+    if(!daily&&n>1&&(depth||0)<4){ toast(t('toast.levelFailed')); startLevel(n-1,(depth||0)+1); return; }
     syms=P.map((_,i)=>SYMBOLS[(i>>1)%SYMBOLS.length]);   /* last resort: plain pairs */
   }
   armBack();
@@ -2049,8 +2964,8 @@ function startLevel(n,depth){
   par=Math.round(total*1.5*parMult());
   const lv=daily?'⚑':String(level);
   $('uiLvl').textContent=lv; $('uiLvl').className=lv.length>3?'xl':lv.length>2?'l':'';
-  headName(daily?('Napi · '+b.name):b.name);
-  $('uiTotal').textContent=total+'-'+fromEnd(total);
+  lvName={daily,shape:b.shape,mod:b.mod}; headName(lvName);
+  $('uiTotal').textContent=t('header.total',{n:total});
   syncAids();
   twinLit=null;
   render(); fit(); refresh(); resetClock();
@@ -2166,20 +3081,17 @@ function refresh(){
   $('uiTip').style.transform='translateX('+(p*100).toFixed(2)+'%)';
   for(const t of ringed) ringClip(t);       /* a tile over a Jóslat ring went or came back */
 }
-/* "92-ből", "76-ból": the ending follows the vowels of the number's last spoken word
-   (kettő, hat; tíz, húsz; száz, ezer), so a fixed "-ból" was wrong for half the boards */
-function fromEnd(n){
-  const u=n%10, t=(n/10|0)%10;
-  if(u) return '368'.includes(u)?'ból':'ből';
-  if(t) return '2368'.includes(t)?'ból':'ből';
-  return n%1000||!n?'ból':'ből';
-}
-/* the header's name: the shape upright, what follows it (the build, or after "Napi" the
-   shape and build) in the italic */
-function headName(s){
-  const h=$('uiShape'), i=s.indexOf(' · ');
-  h.textContent=i<0?s:s.slice(0,i)+' ';
-  if(i>=0){ const e=document.createElement('em'); e.textContent=s.slice(i+1); h.appendChild(e); }
+/* the header's name, from its parts: the first upright (the shape, or "Napi" before it),
+   the rest in the italic (the build or terrace; after "Napi" the shape too). Bare: a daily
+   without its "Napi", which the ⚑ on the sigil says as well (see fitHead); its aria-label
+   keeps the whole name. */
+let headNow=null, headBare=false;
+function headName(n,bare){
+  headNow=n; headBare=!!(bare&&n.daily);
+  const h=$('uiShape'), ps=[n.daily&&!headBare?t('header.daily'):'',t('shape.'+n.shape),n.mod?t(n.mod):''].filter(Boolean);
+  h.textContent=ps[0]+(ps.length>1?' ':'');
+  if(ps.length>1){ const e=document.createElement('em'); e.textContent='· '+ps.slice(1).join(' · '); h.appendChild(e); }
+  if(headBare) h.setAttribute('aria-label',[t('header.daily'),...ps].join(' · ')); else h.removeAttribute('aria-label');
 }
 /* A board tile jolts by the nudge, the selection copy keeps its shake (see .nudge).
    The plain shake stays where the nudge would cost more: on a kid board, one plain
@@ -2444,7 +3356,7 @@ function twinTip(force){
   const n=parseInt(load('gm_twintip','0'),10)||0;
   if(!force&&n>=3) return;                  /* after three times you know the trick */
   save('gm_twintip',n+1);
-  toast('Alatta ugyanez fekszik — koppints rá újra, és együtt eltűnnek');
+  toast(t('toast.twinTip'));
 }
 function findMove(){
   const free=[];
@@ -2464,11 +3376,11 @@ function check(){
     return;
   }
   /* Zen never fails: it just reshuffles the board for you */
-  if(easyMode()){ if(doShuffle(true)) toast('Kevertem, mehet tovább'); else finish(false); return; }
+  if(easyMode()){ if(doShuffle(true)) toast(t('toast.autoShuffled')); else finish(false); return; }
   /* no shuffle left, or none that could help: end it instead of freezing the board */
   if(shuffles<=0||!doShuffle(true,true)){ finish(false); return; }
   /* Out of moves but shuffles left: say so instead of leaving a dead board. */
-  toast('Nincs több lépés — keverj!');
+  toast(t('toast.noMoves'));
   const b=$('bShuf'); b.classList.add('urge');
   setTimeout(()=>b.classList.remove('urge'),4000);
   beep('no');
@@ -2476,9 +3388,7 @@ function check(){
 $('bMenu').onclick=()=>{
   if(!inProgress()) return toMenu();
   const n=present.filter(p=>!p).length;
-  ask('menu','Vissza a főmenübe?',
-      'A szintet elölről kezded, amikor visszatérsz — '+n+' felvett csempe vész el.',
-      'Főmenü', toMenu);
+  ask('menu',t('ask.menu.title'),t('ask.menu.text',{n}),t('ask.menu.yes'),toMenu);
 };
 /* ---------------- segítség: készlet, vásárlás ---------------- */
 function syncAids(){
@@ -2497,20 +3407,18 @@ function spendAid(k){
   syncAids();
 }
 function buyAid(p){
-  if(coins<p.price){ toast('Még '+(p.price-coins)+' tallér kell'); beep('no'); return; }
+  if(coins<p.price){ toast(t('toast.needCoins',{n:p.price-coins})); beep('no'); return; }
   setCoins(coins-p.price,true);
   inv[p.k]+=p.q; saveInv();
   /* a purchase mid-level is usable at once */
   if(!easyMode()){ hints=inv.hint; shuffles=inv.shuf; syncAids(); }
-  toast('+'+p.q+' — most '+inv[p.k]+' van',ASK_ICON[p.k]);
+  toast(t('toast.bought',{q:p.q,n:inv[p.k]}),ASK_ICON[p.k]);
   beep('ok');
   if($('veilShop').classList.contains('on')) drawShop();
 }
 function offerBuy(k){
   const p=AIDPACKS.find(a=>a.k===k&&a.q===3);
-  ask(k, k==='hint'?'Elfogyott a jóslat':'Elfogyott a keverés',
-      '3 darab '+p.price+' tallér — most '+coins+' tallérod van. Nagyobb csomagot a Tárban találsz.',
-      'Megveszem', ()=>buyAid(p));
+  ask(k,t(k==='hint'?'ask.buy.hintTitle':'ask.buy.shufTitle'),t('ask.buy.text',{price:p.price,n:coins}),t('ask.buy.yes'),()=>buyAid(p));
 }
 /* Jóslat's moonlight ring over tile t, in the overlay above the tiers (see .hring): the
    tile itself is not touched, so its tier is neither repainted nor split for the pulse.
@@ -2624,9 +3532,7 @@ function doShuffle(free,dry){
 $('bRestart').onclick=()=>{
   if(!inProgress()) return startLevel(level);
   const n=present.filter(p=>!p).length;
-  ask('again','Szint újrakezdése?',
-      'Ugyanezt a pályát kapod elölről — '+n+' felvett csempe vész el.',
-      'Újrakezdem', ()=>startLevel(level));
+  ask('again',t('ask.again.title'),t('ask.again.text',{n}),t('ask.again.yes'),()=>startLevel(level));
 };
 
 /* ---------------- óra, zárás ---------------- */
@@ -2667,6 +3573,9 @@ function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
    pairs in quick succession used to run finish() two or three times — and pay out
    the reward each time. */
 let levelDone=false;
+/* The open letter as keys and numbers, not words (see renderEnd): a change of language
+   writes it again from these. */
+let endDoc=null;
 function finish(won){
   if(levelDone) return;
   levelDone=true;
@@ -2674,21 +3583,15 @@ function finish(won){
   const secs=running?((Date.now()-t0)/1000|0):0;
   const daily=mode==='daily';
   stAdd('time',secs); lastBanked=secs;   /* a lifeline refunds this, see bRescue */
-  /* the letter: an over line, the title, the time against the target, then one row per gain */
-  const gains=$('endGains'); gains.innerHTML='';
-  const row=(ic,amt,why)=>{
-    const li=document.createElement('li');
-    li.innerHTML='<span class="ic">'+END_ICON[ic]+'</span><b></b><span></span>';
-    /* a number keeps its word on a narrow letter ("20 első kirakás", not "20 / első") */
-    li.children[1].textContent=amt; li.children[2].textContent=why.replace(/(\d+) /g,'$1\u00a0');
-    gains.appendChild(li); return li.children[1];
-  };
-  $('endOver').textContent=daily?'Napi kihívás · '+dailyDay.replace(/-/g,'. ')+'.':level+'. szint · '+MODES[mode].n;
+  /* the letter: an over line, the title, the time against the target, then one row per
+     gain: its icon, the amount (crowns, a count, or a word) and where it came from */
+  const E=endDoc={won,daily,day:dailyDay,level,mode,st:0,title:'end.title.won',text:'',best:[],rows:[],par:0,cost:0,done:null};
+  const row=(ic,amt,why)=>{ E.rows.push({ic,amt,why}); };
   $('endTime').textContent=fmt(secs);
   $('endRec').style.display='none';
-  $('endBest').textContent=''; $('endText').textContent=''; $('endStars').innerHTML='';
+  $('endStars').innerHTML='';
   if(won){
-    const st=starsFor(secs);
+    const st=E.st=starsFor(secs);
     const bestKey = daily?'gm_dbest_'+dailyDay:'gm_best_'+(mode==='adv'?level:mode+level);
     const starKey = daily?dailyDay:level;
     const prevStars = starMap(mode)[starKey]||0;
@@ -2720,7 +3623,6 @@ function finish(won){
     if(mode==='zen'&&!replay) stAdd('zen',1);
     const newStars=keepStars(mode,starKey,st);
     const fb=stGet('best'); if(!fb||secs<fb) save('gm_st_best',secs);
-    $('endTitle').textContent='Kirakva';
     /* the stars, set into the sky: gold for each one earned, a faint outline for a miss */
     let sky='<svg class="ln" viewBox="-75 0 150 96" aria-hidden="true"><defs><radialGradient id="cstG"><stop offset="0" stop-color="#ffe2a8" stop-opacity=".38"/>'+
       '<stop offset=".5" stop-color="#ffd48a" stop-opacity=".1"/><stop offset="1" stop-color="#ffd48a" stop-opacity="0"/></radialGradient></defs>'+
@@ -2729,81 +3631,72 @@ function finish(won){
       ? '<circle r="12" fill="url(#cstG)"/><path d="'+STAR11+'" fill="#e2bd7c"/><path d="M0-6C.5-1.8 1.8-.5 6 0 1.8.5.5 1.8 0 6-.5 1.8-1.8.5-6 0-1.8-.5-.5-1.8 0-6Z" fill="#fff4dc"/>'
       : '<path d="'+STAR11+'" fill="rgba(230,234,242,.08)" stroke="rgba(230,234,242,.3)" stroke-width=".6"/>')+'</svg></span>';
     $('endStars').innerHTML=sky;
-    $('endStars').setAttribute('aria-label',st+' csillag');
     /* where the coins came from */
-    let why='a szintért';
+    let why=['end.gain.level'];
     if(mode!=='kid'){
-      if(replay) why=starPay?(levelPay-starPay)+' újra kirakva · '+starPay+' új csillag':'újra kirakott szint';
-      else if(firstPay) why=(levelPay-firstPay)+' a szintért · '+firstPay+' első kirakás';
+      if(replay) why=starPay?['end.gain.replayStars',{a:levelPay-starPay,b:starPay}]:['end.gain.replay'];
+      else if(firstPay) why=['end.gain.first',{a:levelPay-firstPay,b:firstPay}];
     }
-    const coinsEl=row('coin','+0',why);
-    if(chest) row('chest','+'+fmtN(chest),'mérföldkő-láda');
+    row('coin',{coins:levelPay,count:true},why);
+    if(chest) row('chest',{coins:chest},['end.gain.chest']);
     if(daily){
       const streak=recordDaily();
-      if(streak){ gain+=40+streak*10; $('endTitle').textContent='Mai pálya kész';
-        row('flame','+'+(40+streak*10),'napi sorozat · '+streak+' nap'); }
-      else $('endText').textContent='A mai pályát már teljesítetted — a sorozat nem nőtt.';
+      if(streak){ gain+=40+streak*10; E.title='end.title.daily';
+        row('flame',{cnt:40+streak*10},['end.gain.streak',{n:streak}]); }
+      else E.text='end.text.dailyRepeat';
     }else if(mode==='kid'){
-      $('endText').textContent='Minden képet megtaláltál. Jöhet a következő?';
-      $('endTitle').textContent='Ügyes vagy!';
+      E.text='end.text.kid';
+      E.title='end.title.kid';
     }
-    countUp(coinsEl,levelPay);
     const prev=parseInt(load(bestKey,'0'),10);
     if(!prev||secs<prev){ save(bestKey,secs); $('endRec').style.display=''; }
-    else $('endBest').textContent='Eddigi legjobb idő: '+fmt(prev)+'.';
-    if(newStars&&prevStars) $('endBest').textContent+='  Új csillagrekord: '+prevStars+' → '+st+' ★';
-    else if(!newStars&&prevStars>st) $('endBest').textContent+='  Legjobbad ezen: '+'★'.repeat(prevStars);
+    else E.best.push(['end.best.time',{time:fmt(prev)}]);
+    if(newStars&&prevStars) E.best.push(['end.best.newStars',{from:prevStars,to:st}]);
+    else if(!newStars&&prevStars>st) E.best.push(['end.best.prevStars',{stars:'★'.repeat(prevStars)}]);
     setCoins(coins+gain,true);
     /* progress only ever moves forward — replaying an old level must not rewind it */
     if(!daily&&level+1>lvOf(mode)) save(LVKEY[mode]||'gm_level',level+1);
     /* gifts on milestone levels — the only free help there is, first clear only */
     if(!replay&&!easyMode()){
       let gift=false;
-      if(daily){ inv.hint++; gift=true; row('hint','+1 jóslat','a napi pálya ajándéka'); }
+      if(daily){ inv.hint++; gift=true; row('hint',['end.gain.hintAmt'],['end.gain.dailyGift']); }
       else{
-        if(level%5===0){ inv.hint++; gift=true; row('hint','+1 jóslat','ajándék minden 5. szinten'); }
-        if(level%10===0){ inv.shuf++; gift=true; row('shuf','+1 keverés','minden 10. szinten'); }
+        if(level%5===0){ inv.hint++; gift=true; row('hint',['end.gain.hintAmt'],['end.gain.gift5']); }
+        if(level%10===0){ inv.shuf++; gift=true; row('shuf',['end.gain.shufAmt'],['end.gain.gift10']); }
       }
       if(gift){ saveInv(); hints=inv.hint; shuffles=inv.shuf; syncAids(); }
     }
     $('bNext').style.display=daily?'none':'';
-    $('nextLvl').textContent=(level+1)+'.';
     fanfare();
     if(mode==='adv'){
-      const r=rankOf(lvOf('adv'));
-      if(r!==lastRank){ lastRank=r; save('gm_rank',r); setTimeout(()=>toast('Új rang: '+r),1700); }
+      /* kept and compared by index (see lastRank) */
+      const r=String(rankOf(lvOf('adv')));
+      if(r!==lastRank){ lastRank=r; save('gm_rank',r); setTimeout(()=>toast(t('toast.newRank',{rank:t('rank.'+r)})),1700); }
       const soon=nextUnlock();
-      if(soon) setTimeout(()=>toast('„'+soon.name+'” '+Math.max(0,soon.price-coins)+' tallérra'),3200);
+      if(soon) setTimeout(()=>toast(t('toast.nextUnlock',{name:itemName(soon.k),n:Math.max(0,soon.price-coins)})),3200);
     }
+    /* what the header says over the letter: what was cleared */
+    E.done=mode==='tray'?['header.clearedTray',{tiles:total,triples:total/3}]:['header.cleared',{tiles:total,pairs:total/2}];
   }else{
-    $('endTitle').textContent=mode==='tray'?'Megtelt a tálca':'Elakadt';
-    $('endText').textContent = mode==='tray'
-      ? 'Megtelt a tálca: hét csempe, de egyikből sincs három. Mentőövvel az utolsó három visszakerül a táblára — vagy kezdd a szintet elölről.'
-      : 'A maradék csempék egymást zárják, és elfogyott a keverés. Mentőövvel ott folytatod, ahol abbahagytad — vagy kezdd a szintet elölről, a haladásod megmarad.';
+    E.title=mode==='tray'?'end.title.trayFull':'end.title.stuck';
+    E.text=mode==='tray'?'end.text.trayLost':'end.text.stuck';
     $('bNext').style.display='none';
   }
-  $('endPar').textContent=won&&mode!=='kid'?'céridő '+fmt(par):'';
-  $('againText').textContent=daily?'A mai pálya újra':'Ez a szint újra';
-  /* the engraved face is loaded for this one word only (see the font link) */
-  $('endTitle').classList.toggle('deco',$('endTitle').textContent==='Kirakva');
+  E.par=won&&mode!=='kid'?par:0;
   /* Lifeline: pay coins for one more shuffle and carry on where you stopped */
-  const cost=rescueCost();
+  const cost=E.cost=rescueCost();
   $('bRescue').style.display=won?'none':'';
   /* in Hármas the lifeline gives tiles back, which always works */
   $('bRescue').disabled=coins<cost||(!won&&mode!=='tray'&&!doShuffle(true,true));
-  $('rescueText').textContent='Mentőöv';
-  $('rescueCost').innerHTML=coinSvg(14)+fmtN(cost);
+  renderEnd(true);
   checkAch();
   /* the toolbar and the tray step aside for the letter's own bar (see body.ended); the
      cleared board too, once the last pair's sparks are out (they run 0.6 s from the match,
      this is 0.2 s after it), so the sky behind the letter is only sky */
   document.body.classList.add('ended');
-  if(won){
-    $('uiDone').textContent=total+' csempe · '+(mode==='tray'?total/3+' hármas':total/2+' pár');
-    document.body.classList.add('won');
-  }
+  if(won) document.body.classList.add('won');
   /* four rows (a milestone's first clear) take a tighter letter on a shorter phone */
-  $('veilEnd').classList.toggle('many',gains.children.length>3);
+  $('veilEnd').classList.toggle('many',E.rows.length>3);
   clearTimeout(endHide);
   if(won) endHide=setTimeout(()=>{ if($('veilEnd').classList.contains('on')&&!$('veilEnd').classList.contains('lost')) document.body.classList.add('cleared'); },450);
   $('veilEnd').classList.toggle('lost',!won);
@@ -2811,6 +3704,39 @@ function finish(won){
   endSheet();
   /* a face still loading would change the letter's height after it was measured */
   if(document.fonts&&document.fonts.status!=='loaded') document.fonts.ready.then(()=>{ if($('veilEnd').classList.contains('on')) endSheet(); });
+}
+/* The letter's words, from endDoc: written as it opens (anim: the crowns of the level count
+   up) and again, as they are, on a change of language. The time, the stars in the sky and
+   the buttons' state are finish()'s and stay. */
+function renderEnd(anim){
+  const E=endDoc;
+  $('endOver').textContent=E.daily?t('daily.overLine',{date:dailyDate(E.day)}):t('end.overLine',{n:String(E.level),mode:t('mode.'+E.mode+'.name')});
+  $('endTitle').textContent=t(E.title);
+  /* the engraved face is loaded for this one title only (see the font link): by its key */
+  $('endTitle').classList.toggle('deco',E.title==='end.title.won');
+  $('endPar').textContent=E.par?t('end.par',{time:fmt(E.par)}):'';
+  $('endBest').textContent=E.best.map(b=>t(b[0],b[1])).join('  ');
+  $('endText').textContent=E.text?t(E.text):'';
+  $('endStars').setAttribute('aria-label',E.won?t('end.starsCountAria',{n:E.st}):t('end.starsAria'));
+  const gains=$('endGains'); gains.innerHTML='';
+  for(const r of E.rows){
+    const li=document.createElement('li'), a=r.amt;
+    li.innerHTML='<span class="ic">'+END_ICON[r.ic]+'</span><b></b><span></span>';
+    li.children[1].textContent=Array.isArray(a)?t(a[0]):'+'+(a.cnt!=null?G.cnt(a.cnt):fmtN(a.coins));
+    /* a number keeps its word on a narrow letter ("20 első kirakás", not "20 / első", and
+       "5. szinten"), and a line too long for its row breaks between its parts (each an
+       inline-block, see .gains span i): "78 for the level · / 20 for a first clear", not
+       "… 20 for a / first clear" */
+    const why=t(r.why[0],r.why[1]).replace(/(\d+\.?) /g,'$1\u00a0').split(' · ');
+    li.children[2].innerHTML=why.map((w,i)=>'<i>'+esc(w)+(i<why.length-1?' ·':'')+'</i>').join(' ');
+    gains.appendChild(li);
+    if(anim&&a.count) countUp(li.children[1],a.coins);
+  }
+  $('nextLvl').textContent=t('end.nextNum',{n:String(E.level+1)});
+  $('againText').textContent=t(E.daily?'daily.go.again':'endbar.again');
+  $('rescueText').textContent=t('end.rescue');
+  $('rescueCost').innerHTML=coinSvg(14)+fmtN(E.cost);
+  $('uiDone').textContent=E.done?t(E.done[0],E.done[1]):'';
 }
 function countUp(el,to){
   let v=0; const step=Math.max(1,Math.ceil(to/26));
@@ -2918,11 +3844,12 @@ function parchment(w,h,seed){
     '<path d="'+d+'" fill="none" stroke="#9c7440" stroke-width="3.5" stroke-opacity=".22"/></g>'+
     '<path d="'+d+'" fill="none" stroke="#7d5a2c" stroke-opacity=".45" stroke-width=".8"/></svg>';
 }
+/* the cheapest item open to buy but not yet afforded, by its key (the toast names it) */
 function nextUnlock(){
   let best=null;
   const scan=o=>{ for(const k in o){ const it=o[k];
     if(owned.includes(k)||it.lvl>level||coins>=it.price) continue;
-    if(!best||it.price<best.price) best={name:it.name,price:it.price}; } };
+    if(!best||it.price<best.price) best={k,price:it.price}; } };
   scan(SKINS); scan(PACKS); scan(BGS); scan(ACCS); return best;
 }
 
@@ -2936,16 +3863,18 @@ for(const b of $('shopTabs').children){
     drawShop(); beep('tap'); };
 }
 function totalItems(){ return Object.keys(SKINS).length+Object.keys(PACKS).length+Object.keys(BGS).length+Object.keys(ACCS).length; }
+/* A Tár list in the order its items open up, the level first. The keys keep their
+   order of creation (saves refer to them), and the film-inspired packs and places
+   were added last although they open early, so the 50th-level pack used to sit after
+   the 856th. Items opening at the same level keep their order (sort is stable). */
+const byUnlock=src=>Object.keys(src).sort((a,b)=>src[a].lvl-src[b].lvl);
 /* a price is always the coin and a number, never "tallér" */
 const coinSvg=n=>`<svg width="${n}" height="${n}" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#d6b274"/><circle cx="8" cy="8" r="5.2" fill="none" stroke="#8a6a32" stroke-width=".9"/></svg>`;
 const LOCK_BADGE='<span class="lk"><svg viewBox="0 0 12 12"><rect x="2.5" y="5.5" width="7" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5"/></svg></span>';
 const CHECK_SVG='<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const SHOP_TABS={
-  skin:{intro:'Az asztal csempéinek anyaga és színe.', h:'Csempestílus'},
-  pack:{intro:'A képek, amelyeket párba gyűjtesz.', h:'Ikonkészlet', note:'új készlet új táblát oszt'},
-  bg:  {intro:'Amit a torony ablakából látsz, és a pecsét színe.', h:'Helyszín', note:'játék közben a tábla mögött'},
-  upg: {intro:'Jóslat és keverés a nehéz táblákra, és ami tartósan segít.'}
-};
+/* the tabs; each has an intro and a heading over its items (shop.intro.*, shop.head.*), and
+   a note beside the heading (shop.note.*) or, for the skins, the count owned */
+const SHOP_TABS={skin:{}, pack:{note:true}, bg:{note:true}, upg:{}};
 /* Three pictures of a pack on fanned tiles. Where one picture stands for the whole pack,
    Varázslóiskola shows only generic ones (a potion, a cauldron, a candle): the set also
    holds film props. Lazy, so a tab draws its pictures as they scroll in. */
@@ -2969,9 +3898,9 @@ function watchThumbs(g){
   for(const p of g.querySelectorAll('.pic.arch')) thumbObs.observe(p);
 }
 function drawShop(open){
-  const g=$('shopGrid'), T=SHOP_TABS[tab]||SHOP_TABS.skin;
-  $('shopSub').innerHTML=rankOf(lvOf('adv'))+' · gyűjtemény <b>'+owned.length+' / '+totalItems()+'</b>';
-  $('shopIntro').textContent=T.intro;
+  const g=$('shopGrid'), tb=SHOP_TABS[tab]?tab:'skin';
+  $('shopSub').innerHTML=th('shop.sub',{rank:t('rank.'+rankOf(lvOf('adv'))),owned:owned.length,total:totalItems()});
+  $('shopIntro').textContent=t('shop.intro.'+tb);
   if(tab==='upg'){ drawUpg(g); return; }
   const src = tab==='skin'?SKINS : tab==='pack'?PACKS : BGS;
   const cur = tab==='skin'?curSkin : tab==='pack'?curPack : curBg;
@@ -2980,9 +3909,10 @@ function drawShop(open){
      afresh (the Tár opened, or its Háttér tab) brings the active seal into view instead. */
   const row=open?null:g.querySelector('.seals'), rowX=row?row.scrollLeft:-1;
   let n=0; for(const k in src) if(owned.includes(k)) n++;
-  let h=(tab==='bg'?sealRow():'')+'<div class="sec"><h3>'+T.h+'</h3><span>'+(T.note||n+' / '+Object.keys(src).length+' megvan')+'</span></div>'+
+  let h=(tab==='bg'?sealRow():'')+'<div class="sec"><h3>'+esc(t('shop.head.'+tb))+'</h3><span>'+
+    esc(SHOP_TABS[tb].note?t('shop.note.'+tb):t('shop.owned',{n,total:Object.keys(src).length}))+'</span></div>'+
     '<div class="items'+(tab==='pack'?' two':'')+'">';
-  for(const key in src){
+  for(const key of byUnlock(src)){
     const it=src[key], has=owned.includes(key), lock=!has&&it.lvl>level, on=key===cur;
     let pic;
     /* a skin: the plate carries the skin's colours, the fan shows the pack in play on them */
@@ -2990,12 +3920,12 @@ function drawShop(open){
       ['--t-f1','--t-f3','--t-rim','--t-rim-r','--t-side','--t-side-l'].map(p=>p+':'+it.v[p]).join(';')+'">'+fanHTML(pk.s,pk.id,true);
     else if(tab==='pack') pic='<div class="pic plate">'+fanHTML(it.s,it.id,true);
     else pic='<div class="pic arch" data-k="'+key+'">';
-    const meta = on ? '<div class="meta use">'+CHECK_SVG+'Használatban</div>'
-      : has ? '<div class="meta">Megvan</div>'
-      : lock ? '<div class="meta">'+it.lvl+'. szinttől</div>'
+    const meta = on ? '<div class="meta use">'+CHECK_SVG+esc(t('shop.state.inUse'))+'</div>'
+      : has ? '<div class="meta">'+esc(t('shop.state.owned'))+'</div>'
+      : lock ? '<div class="meta">'+esc(t('shop.state.fromLevel',{n:String(it.lvl)}))+'</div>'
       : '<div class="meta buy">'+coinSvg(12)+fmtN(it.price)+'</div>';
     h+='<button class="item'+(on?' on':'')+'" data-k="'+key+'">'+pic+(lock?LOCK_BADGE:'')+'</div>'+
-       '<div class="iname">'+it.name+'</div>'+meta+'</button>';
+       '<div class="iname">'+esc(itemName(key))+'</div>'+meta+'</button>';
   }
   g.innerHTML=h+'</div>';
   fitNames(g);
@@ -3013,15 +3943,15 @@ function drawShop(open){
    whatever the page wears; the state line is the places' (Aktív, Megvan, a price, a lock). */
 const SPARK4='<svg viewBox="-5 -5 10 10" aria-hidden="true"><path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/></svg>';
 function sealRow(){
-  let h='<div class="sec"><h3>Pecsétszín</h3><span>keretek, vonalak, pecsét</span></div><div class="seals">';
-  for(const key in ACCS){
+  let h='<div class="sec"><h3>'+esc(t('shop.seal.head'))+'</h3><span>'+esc(t('shop.seal.note'))+'</span></div><div class="seals">';
+  for(const key of byUnlock(ACCS)){
     const a=ACCS[key], has=owned.includes(key), lock=!has&&a.lvl>level, on=key===curAccent;
-    const st = on ? '<em class="use">'+CHECK_SVG+'Aktív</em>'
-      : has ? '<em class="lk">Megvan</em>'
-      : lock ? '<em class="lk">'+a.lvl+'. szinttől</em>'
+    const st = on ? '<em class="use">'+CHECK_SVG+esc(t('shop.seal.active'))+'</em>'
+      : has ? '<em class="lk">'+esc(t('shop.state.owned'))+'</em>'
+      : lock ? '<em class="lk">'+esc(t('shop.state.fromLevel',{n:String(a.lvl)}))+'</em>'
       : '<em>'+coinSvg(12)+fmtN(a.price)+'</em>';
-    h+='<button class="sw'+(on?' on':'')+'" data-k="'+key+'" data-accent="'+a.k+'" aria-label="'+a.name+'">'+
-      '<span class="sl"></span><span class="tr"><i></i>'+SPARK4+'</span><b>'+a.a+'</b><small>'+a.b+'</small>'+st+'</button>';
+    h+='<button class="sw'+(on?' on':'')+'" data-k="'+key+'" data-accent="'+a.k+'" aria-label="'+esc(itemName(key))+'">'+
+      '<span class="sl"></span><span class="tr"><i></i>'+SPARK4+'</span><b>'+esc(t('accent.'+a.k+'.a'))+'</b><small>'+esc(t('accent.'+a.k+'.b'))+'</small>'+st+'</button>';
   }
   return h+'</div>';
 }
@@ -3035,7 +3965,7 @@ function fillSeals(g,x){
     b.firstChild.innerHTML=sealArt[k]||(sealArt[k]=waxSeal({el:b,id:'sw'+k,rot:-8+i*4}));
   });
   if(x>0) row.scrollLeft=x;
-  else if(x<0){ const i=Object.keys(ACCS).indexOf(curAccent); if(i>0) requestAnimationFrame(()=>revealSeal(row,i)); }
+  else if(x<0){ const i=byUnlock(ACCS).indexOf(curAccent); if(i>0) requestAnimationFrame(()=>revealSeal(row,i)); }
 }
 /* The active seal in view: the row is scrolled, at once, to the first snap position (a
    card's left edge at the 16 px padding) that shows card i whole. A card and its gap are
@@ -3047,12 +3977,13 @@ function revealSeal(row,i){
   if(need>0) row.scrollLeft=Math.ceil(need/90)*90;
 }
 /* A one-word name wider than its column ("Smaragdcsarnok" on a 393 px phone) is set as
-   much smaller as it needs, down to 12 px, instead of losing its end. All read first,
-   then all written: one layout, not one per name. */
+   much smaller as it needs, down to 11 px, instead of losing its end. All read first,
+   then all written: one layout, not one per name. Rounded down: rounded to the nearest
+   tenth, "Sárkánybarlang" still lost a pixel of its last letter on a 320 px phone. */
 function fitNames(g){
   const ns=[...g.querySelectorAll('.iname')]; if(!ns.length) return;
   const fs=parseFloat(getComputedStyle(ns[0]).fontSize);
-  const fit=ns.map(e=>{ const sw=e.scrollWidth-4, cw=e.clientWidth-4; return sw>cw+1?Math.max(12,fs*cw/sw):0; });
+  const fit=ns.map(e=>{ const sw=e.scrollWidth-4, cw=e.clientWidth-4; return sw>cw+1?Math.max(11,Math.floor(fs*cw/sw*10)/10):0; });
   ns.forEach((e,i)=>{ if(fit[i]) e.style.fontSize=fit[i].toFixed(1)+'px'; });
 }
 /* line icons for the Segítség rows: the toolbar's crystal ball and shuffle, a coin purse
@@ -3065,18 +3996,19 @@ const AID_ICON={
 };
 function drawUpg(g){
   /* consumable help first: that is what runs out */
-  let h='<div class="sec"><h3>Készlet</h3><span>nálad '+inv.hint+' jóslat · '+inv.shuf+' keverés</span></div>';
+  let h='<div class="sec"><h3>'+esc(t('shop.upg.stockHead'))+'</h3><span>'+
+    esc(t('shop.upg.stockNote',{hints:t('count.hint',{n:inv.hint}),shuffles:t('count.shuffle',{n:inv.shuf})}))+'</span></div>';
   AIDPACKS.forEach((p,i)=>{
     h+='<button class="aid" data-a="'+i+'"><span class="ai">'+AID_ICON[p.k]+'</span>'+
-      '<span class="at"><b>'+p.n.replace(/×(\d+)/,'<span class="q">×$1</span>')+'</b><small>'+p.note+'</small></span><span class="pr">'+coinSvg(13)+fmtN(p.price)+'</span></button>';
+      '<span class="at"><b>'+th('aidpack.name',{item:t('aidpack.item.'+p.k),q:p.q})+'</b><small>'+esc(t('aidpack.'+p.id+'.note'))+'</small></span><span class="pr">'+coinSvg(13)+fmtN(p.price)+'</span></button>';
   });
-  h+='<div class="sec"><h3>Fejlesztés</h3><span>végleges, minden szintre</span></div>';
+  h+='<div class="sec"><h3>'+esc(t('shop.upg.head'))+'</h3><span>'+esc(t('shop.upg.note'))+'</span></div>';
   for(const k in UPG){
     const u=UPG[k], n=upg[k], maxed=n>=u.max;
     let pips=''; for(let i=0;i<u.max;i++) pips+=i<n?'<i class="on"></i>':'<i></i>';
     h+='<button class="aid" data-u="'+k+'"><span class="ai">'+AID_ICON[k]+'</span>'+
-      '<span class="at"><b>'+u.name+'</b><small>'+u.note+' · '+n+' / '+u.max+'</small><span class="pips">'+pips+'</span></span>'+
-      '<span class="pr'+(maxed?' done':'')+'">'+(maxed?'Teljes':coinSvg(13)+fmtN(upgCost(n)))+'</span></button>';
+      '<span class="at"><b>'+esc(t('upg.'+k+'.name'))+'</b><small>'+esc(t('shop.upg.progress',{note:t('upg.'+k+'.note'),n,max:u.max}))+'</small><span class="pips">'+pips+'</span></span>'+
+      '<span class="pr'+(maxed?' done':'')+'">'+(maxed?esc(t('shop.upg.maxed')):coinSvg(13)+fmtN(upgCost(n)))+'</span></button>';
   }
   g.innerHTML=h;
   g.onclick=e=>{
@@ -3086,19 +4018,19 @@ function drawUpg(g){
 }
 function buyUpg(k){
   const u=UPG[k], n=upg[k], cost=upgCost(n);
-  if(n>=u.max){ toast('Ez már a csúcsán van'); return; }
-  if(coins<cost){ toast('Még '+(cost-coins)+' tallér kell'); beep('no'); return; }
+  if(n>=u.max){ toast(t('toast.maxed')); return; }
+  if(coins<cost){ toast(t('toast.needCoins',{n:cost-coins})); beep('no'); return; }
   setCoins(coins-cost,true); upg[k]=n+1; saveUpg();
-  toast(u.name+' → '+(n+1)+'. fok'); beep('ok'); drawShop();
+  toast(t('toast.upgraded',{name:t('upg.'+k+'.name'),n:n+1})); beep('ok'); drawShop();
   if(k==='ido') par=Math.round(total*1.5*parMult());
 }
 function pick(key,it,has,lock){
   if(has){ equip(key); return; }
-  if(lock){ toast('Ez a '+it.lvl+'. szinten nyílik'); beep('no'); return; }
-  if(coins<it.price){ toast('Még '+(it.price-coins)+' tallér kell'); beep('no'); return; }
+  if(lock){ toast(t('toast.lockedUntil',{n:String(it.lvl)})); beep('no'); return; }
+  if(coins<it.price){ toast(t('toast.needCoins',{n:it.price-coins})); beep('no'); return; }
   setCoins(coins-it.price,true);
   owned.push(key); save('gm_owned',JSON.stringify(owned));
-  equip(key); toast('„'+it.name+'” a tiéd'); fanfare();
+  equip(key); toast(t('toast.yours',{name:itemName(key)})); fanfare();
 }
 function equip(key){
   if(ACCS[key]){ curAccent=key; save('gm_accent',key); }
@@ -3192,8 +4124,8 @@ function fillChap(box,a,z,un,stars,m){
     const done=l<un, cur=l===un, locked=l>un, st=stars[l]||0;
     const d=document.createElement('div');
     d.className='lv'+(done?' done':'')+(cur?' cur':'')+(locked?' lock':'');
-    const mark = locked ? LOCK_SVG
-      : cur ? '<em>most</em>'
+    const mark = locked ? lockSvg()
+      : cur ? '<em>'+esc(t('levels.now'))+'</em>'
       : st ? STAR_ON.repeat(st)+STAR_OFF.repeat(3-st)
       : '<span class="ok">'+CHECK_SVG+'</span>';           /* finished before stars were kept */
     d.innerHTML='<canvas data-lv="'+l+'" data-m="'+m+'"'+(locked?' data-lock="1"':'')+'></canvas><div class="ln">'+l+'</div><div class="ls">'+mark+'</div>';
@@ -3207,13 +4139,16 @@ function fillChap(box,a,z,un,stars,m){
 const STAR_PATH='<path d="M0-5C.5-1.5 1.5-.5 5 0 1.5.5.5 1.5 0 5-.5 1.5-1.5.5-5 0-1.5-.5-.5-1.5 0-5Z"/>';
 const STAR_ON='<svg class="on" viewBox="-5 -5 10 10" aria-hidden="true">'+STAR_PATH+'</svg>';
 const STAR_OFF='<svg viewBox="-5 -5 10 10" aria-hidden="true">'+STAR_PATH+'</svg>';
-const LOCK_SVG='<svg class="lk" viewBox="0 0 12 12" aria-label="zárva"><rect x="2.5" y="5.5" width="7" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5"/></svg>';
+const lockSvg=()=>'<svg class="lk" viewBox="0 0 12 12" aria-label="'+esc(t('common.lockAria'))+'"><rect x="2.5" y="5.5" width="7" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5"/></svg>';
 const CHEV_SVG='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
-function drawLevels(){
+/* keep: written again in another language (see setLang), so the chapters open now stay
+   open and the page stays where it was scrolled to */
+function drawLevels(keep){
   const m=playMode(), un=lvOf(m), stars=starMap(m);
   const curCh=Math.floor((un-1)/CHAP), lastCh=Math.min(Math.floor(999/CHAP),curCh+1);
-  $('lvSub').innerHTML=MODES[m].n+' · '+(un-1)+' szint kész · <b>'+totalStars(m)+'</b>'+STAR_ON;
-  $('lvGoText').textContent=un>1?('Folytatás — '+un+'. szint'):'Kezdjük';
+  const was=keep?[...$('lvList').children].map(b=>b.classList.contains('open')):null, y=$('veilLevels').scrollTop;
+  $('lvSub').innerHTML=th('levels.sub',{mode:t('mode.'+m+'.name'),n:un-1,stars:totalStars(m),star:{html:STAR_ON}});
+  $('lvGoText').textContent=un>1?t('levels.go.continue',{n:String(un)}):t('home.go.start');
   const list=$('lvList'); list.innerHTML='';
   let curBox=null;
   /* chapters up to the current one, plus the next as a locked preview */
@@ -3222,17 +4157,29 @@ function drawLevels(){
     let got=0; for(let l=a;l<=z;l++) got+=stars[l]||0;
     const box=document.createElement('div');
     box.className='chap'+(locked?' lock':'');
-    box.innerHTML='<button><span class="cn">'+a+'–'+z+'<small>'+RANKS[Math.min(RANKS.length-1,ch)]+'</small></span>'+
-      '<span class="cs">'+(locked?LOCK_SVG:got+' / '+(z-a+1)*3+STAR_ON)+'</span><span class="cv">'+CHEV_SVG+'</span></button><div class="cells"></div>';
+    box.innerHTML='<button><span class="cn">'+esc(t('levels.chapterRange',{a:String(a),z:String(z)}))+'<small>'+esc(t('rank.'+Math.min(RANKS.length-1,ch)))+'</small></span>'+
+      '<span class="cs">'+(locked?lockSvg():esc(t('levels.chapterStars',{got,max:(z-a+1)*3}))+STAR_ON)+'</span><span class="cv">'+CHEV_SVG+'</span></button><div class="cells"></div>';
     box.firstChild.onclick=()=>{
       const open=box.classList.toggle('open');
       if(open) fillChap(box,a,z,un,stars,m);
       beep('tap');
     };
     list.appendChild(box);
-    if(ch===curCh){ box.classList.add('open'); fillChap(box,a,z,un,stars,m); curBox=box; }
+    if(was?was[ch]:ch===curCh){ box.classList.add('open'); fillChap(box,a,z,un,stars,m); }
+    if(ch===curCh) curBox=box;
   }
+  if(keep) $('veilLevels').scrollTop=y;
+  if($('veilLevels').classList.contains('on')) fitChaps();
   return curBox;
+}
+/* a chapter's rank too long for its row on a narrow phone ("Seprűnyél-egyensúlyozó") is set
+   smaller, down to 14 px; a shown page only (a hidden one measures nothing), all read, then
+   all written, measured to a fraction of a pixel (see textFit) */
+function fitChaps(){
+  const ns=[...$('lvList').querySelectorAll('.chap small')]; if(!ns.length) return;
+  const fs=parseFloat(getComputedStyle(ns[0]).fontSize);
+  const fit=ns.map(e=>{ const f=textFit(e); return f&&f.text>f.room?Math.max(14,Math.floor(fs*(f.room-.5)/f.text*4)/4):0; });
+  ns.forEach((e,i)=>{ if(fit[i]) e.style.fontSize=fit[i]+'px'; });
 }
 function playFromMap(m,l){
   ensureAudio();
@@ -3242,7 +4189,7 @@ function playFromMap(m,l){
 }
 $('bLevels').onclick=()=>{
   const cur=drawLevels();
-  $('veilLevels').classList.add('on'); $('veilLevels').scrollTop=0;
+  $('veilLevels').classList.add('on'); $('veilLevels').scrollTop=0; fitChaps();
   armBack(); beep('tap');
   /* further along, open straight at the current chapter. From its layout offset: the page
      is still rising in (scaled and shifted), and a target taken from its drawn box would
@@ -3257,9 +4204,9 @@ function setMode(m){
   if(!LVKEY[m]) m='adv';
   mode=m; save('gm_mode',m); level=lvOf(m);
   for(const b of $('modeRow').children) b.classList.toggle('on',b.dataset.mode===m);
-  $('modeNote').textContent=MODES[m].note;
+  $('modeNote').textContent=t('mode.'+m+'.note');
   /* the card above it shows the level, so the button needs no number */
-  $('goText').textContent=level>1?'Folytatás':'Kezdjük';
+  $('goText').textContent=t(level>1?'home.go.continue':'home.go.start');
   homeCard();
 }
 /* The menu's personal card, for the chosen mode: its level, the chapter of 25 it is in
@@ -3268,38 +4215,51 @@ function setMode(m){
 function homeCard(){
   const un=lvOf(mode), last=RANKS.length-1;
   const ch=Math.min(last,Math.floor((un-1)/CHAP)), done=Math.min(CHAP,un-1-ch*CHAP);
-  $('hsOver').textContent=MODES[mode].n+' · '+RANKS[ch];
+  $('hsOver').textContent=t('home.over',{mode:t('mode.'+mode+'.name'),rank:t('rank.'+ch)}); fitOver();
   $('hsLevel').textContent=un;
   $('hsChap').textContent=done+' / '+CHAP;
   $('hsBar').style.transform='scaleX('+(done/CHAP).toFixed(3)+')';
   const nx=$('hsNext');
-  if(ch<last){
-    nx.textContent='még '+((ch+1)*CHAP+1-un)+' szint · ';
-    const b=document.createElement('b'); b.textContent=RANKS[ch+1]; nx.appendChild(b);
-  }else nx.textContent=done>=CHAP?'minden szint kész':'az utolsó fejezet';
+  if(ch<last) nx.innerHTML=th('home.nextChapter',{n:(ch+1)*CHAP+1-un,rank:t('rank.'+(ch+1))});
+  else nx.textContent=t(done>=CHAP?'home.allDone':'home.lastChapter');
   const kid=mode==='kid', pk=PACKS[curPack]||PACKS.pk0, fan=$('hsFan'), fk=kid?'kid':curPack;
   if(fan.dataset.k!==fk){ fan.dataset.k=fk; fan.innerHTML=kid?fanTiles(KID_SYMBOLS,'gyerek'):fanTiles(pk.s,pk.id); }
   /* "csempék" is the word a 320 px phone leaves out (see .pk .cs) */
-  const pe=$('hsPack');
-  pe.textContent=kid?'Gyerek képek':pk.name;
-  if(!kid){ const c=document.createElement('span'); c.className='cs'; c.textContent=' csempék'; pe.appendChild(c); }
-  pe.appendChild(document.createTextNode(' · '+(BGS[curBg]||BGS.bg0).name));
+  const place=t('bg.'+(BGS[curBg]?curBg:'bg0')+'.name');
+  $('hsPack').innerHTML=kid?th('home.kidLine',{pack:t('home.kidPictures'),place}):th('home.packLine',{pack:t('pack.'+pk.id+'.name'),place});
   /* the Pályák room counts the same mode as the card */
-  $('lvChip').textContent=un>1?(un-1)+' kész':'minden szint';
+  $('lvChip').textContent=un>1?t('home.chip.levelsDone',{n:un-1}):t('home.chip.levelsAll');
+}
+/* The over-line beside the stars: a long rank ("Seprűnyél-egyensúlyozó", "Broomstick
+   Balancer") on a narrow phone is set tighter first, then smaller, down to 11.5 px, and only
+   past that loses its end to the ellipsis. Measured at its full size (see textFit); small
+   caps do not shrink quite in proportion, so a size that still overflows steps down a
+   quarter pixel at a time (menu only, never in play). The px line-height keeps the card as
+   tall whatever its size (see .pcard .over). */
+function fitOver(){
+  const o=$('hsOver'); o.style.letterSpacing=o.style.fontSize='';
+  let f=textFit(o); if(!f||f.text<=f.room) return;
+  o.style.letterSpacing='.04em';
+  f=textFit(o); if(f.text<=f.room) return;
+  let fs=Math.max(11.5,Math.floor(parseFloat(getComputedStyle(o).fontSize)*f.room/f.text*4)/4);
+  o.style.fontSize=fs+'px';
+  while(fs>11.5&&(f=textFit(o)).text>f.room){ fs-=.25; o.style.fontSize=fs+'px'; }
 }
 function refreshStart(){
   setMode(LVKEY[mode]?mode:load('gm_mode','adv'));
   /* the card carries the rank now, so the tagline stays the tagline */
-  $('bHelp').classList.toggle('hot',lvOf('adv')<=1);   /* newcomers: point them at the rules */
+  /* newcomers: point them at the rules, in the settings behind the gear */
+  const nu=lvOf('adv')<=1; $('bHelp').classList.toggle('hot',nu); $('bSettings').classList.toggle('hot',nu);
   const s=curStreak(), done=dailyDone();
   /* the corners and the rooms show live numbers, not static labels */
-  $('hsStars').textContent=totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily');
-  $('hsStreak').textContent=s; $('hsStreakBox').classList.toggle('zero',!s);
+  $('hsStars').textContent=G.cnt(totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily'));
+  $('hsStreak').textContent=G.cnt(s); $('hsStreakUnit').textContent=t('home.streakUnit',{n:s});
+  $('hsStreakBox').classList.toggle('zero',!s);
   $('hsCoins').textContent=fmtN(coins);
-  $('dChip').textContent=done?'ma kész':'ma még nyitva';
+  $('dChip').textContent=t(done?'home.chip.dailyDone':'home.chip.dailyOpen');
   $('bDaily').classList.toggle('hot',!done);
-  $('achChip').textContent=achGot().length+' / '+ACH.length+' kitűző';
-  $('shopChip').textContent=owned.length+' / '+totalItems();
+  $('achChip').textContent=t('home.chip.badges',{got:achGot().length,total:ACH.length});
+  $('shopChip').textContent=t('home.chip.shop',{owned:owned.length,total:totalItems()});
   queueScene();   /* the title sits in the scene: the window follows any change of the menu */
 }
 /* buildScene on the next frame: refreshStart also runs while the page script is still
@@ -3312,6 +4272,12 @@ function queueScene(){
 $('bHomeShop').onclick=()=>openShop();
 $('bHelp').onclick=()=>{ $('veilHelp').classList.add('on'); armBack(); beep('tap'); };
 $('bHelpClose').onclick=$('bHelpBack').onclick=()=>closePage('veilHelp');
+/* the settings page, from the gear on the menu. A save drawer left open shows the code of
+   now, not of its last visit: the reset's warning sends the player here to copy it */
+$('bSettings').onclick=()=>{ drawLangs(); if($('swSave').classList.contains('on')) $('saveTxt').value=exportSave();
+  $('veilSettings').classList.add('on'); $('veilSettings').scrollTop=0; armBack(); beep('tap'); };
+$('bSetBack').onclick=()=>closePage('veilSettings');
+$('langSeg').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; setLang(b.lang); beep('tap'); };
 $('modeRow').onclick=e=>{
   const b=e.target.closest('button'); if(!b) return;
   setMode(b.dataset.mode); beep('tap');
@@ -3319,19 +4285,17 @@ $('modeRow').onclick=e=>{
 };
 function fmtLong(s){
   const h=Math.floor(s/3600), m=Math.floor(s%3600/60);
-  return h?(h+' ó '+m+' p'):(m?m+' p':(s?s+' mp':'—'));
+  return h?t('dur.hm',{h,m}):m?t('dur.m',{m}):s?t('dur.s',{s}):t('dur.none');
 }
-const WD=['H','K','Sze','Cs','P','Szo','V'];
-const MONTHS=['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'];
 function drawDaily(){
-  $('dMonth').textContent=MONTHS[new Date().getMonth()];
-  $('dStreak').textContent=curStreak();
-  $('dBest').textContent=parseInt(load('gm_daily_best','0'),10)||0;
-  $('dTotal').textContent=dailyDays().length;
+  $('dMonth').textContent=t('date.month.'+new Date().getMonth());
+  $('dStreak').textContent=G.cnt(curStreak());
+  $('dBest').textContent=G.cnt(parseInt(load('gm_daily_best','0'),10)||0);
+  $('dTotal').textContent=G.cnt(dailyDays().length);
   const now=new Date(), y=now.getFullYear(), m=now.getMonth();
   const pad=(new Date(y,m,1).getDay()+6)%7;          /* a hét hétfővel kezdődik */
   const days=new Date(y,m+1,0).getDate(), done=dailyDays();
-  let h=WD.map(d=>'<div class="hd">'+d+'</div>').join('');
+  let h=''; for(let i=0;i<7;i++) h+='<div class="hd">'+esc(t('date.wd.'+i))+'</div>';
   for(let i=0;i<pad;i++) h+='<i class="pad"></i>';
   for(let d=1;d<=days;d++){
     const cls=[done.indexOf(dayKey(new Date(y,m,d)))>=0?'done':'',
@@ -3339,37 +4303,43 @@ function drawDaily(){
     h+='<i class="'+cls+'">'+d+'</i>';
   }
   $('dCal').innerHTML=h;
-  $('dGoText').textContent=dailyDone()?'A mai pálya újra':'Mai pálya';
+  $('dGoText').textContent=t(dailyDone()?'daily.go.again':'daily.go.today');
 }
-function drawStats(){
+/* keep: written again in another language (see setLang), the badge picked stays picked */
+function drawStats(keep){
+  const sel=keep?[...$('achGrid').children].findIndex(x=>x.classList.contains('sel')):-1;
   checkAch();                     /* purchases can unlock badges too */
   const s=achState();
-  const rows=[
-    ['Kirakott szint',       s.solved],
-    ['Kaland szint',         lvOf('adv')],
-    ['Összjáték-idő',        fmtLong(s.time)],
-    ['Leggyorsabb szint',    s.best?fmt(s.best):'—'],
-    ['Három csillag',        s.perfect],
-    ['Összegyűjtött csillag',totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily')],
-    ['Napi sorozat',         curStreak()+' nap'],
-    ['Leghosszabb sorozat',  s.bestStreak+' nap'],
-    ['Napi pályák',          dailyDays().length],
-    ['Tár gyűjtemény',       s.owned+'/'+totalItems()]
+  const rows=[    /* journal.stat.<key> and the value under it */
+    ['solved',     G.cnt(s.solved)],
+    ['advLevel',   lvOf('adv')],
+    ['time',       fmtLong(s.time)],
+    ['fastest',    s.best?fmt(s.best):'—'],
+    ['perfect',    G.cnt(s.perfect)],
+    ['stars',      G.cnt(totalStars('adv')+totalStars('mem')+totalStars('zen')+totalStars('daily'))],
+    ['streak',     t('journal.days',{n:curStreak()})],
+    ['bestStreak', t('journal.days',{n:s.bestStreak})],
+    ['daily',      G.cnt(dailyDays().length)],
+    ['collection', t('journal.collection',{a:s.owned,b:totalItems()})]
   ];
-  $('stRank').textContent=rankOf(lvOf('adv'))+' · '+s.solved+' szint mögötted';
-  $('stGrid').innerHTML=rows.map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  $('stRank').textContent=t('journal.rankLine',{rank:t('rank.'+rankOf(lvOf('adv'))),n:s.solved});
+  $('stGrid').innerHTML=rows.map(r=>'<div><b>'+esc(r[1])+'</b><span>'+esc(t('journal.stat.'+r[0]))+'</span></div>').join('');
   const got=achGot();
-  $('achCount').textContent=got.length+' / '+ACH.length+' megvan';
+  $('achCount').textContent=t('journal.badgeCount',{got:got.length,total:ACH.length});
   $('achGrid').innerHTML=ACH.map((a,i)=>
-    '<i data-a="'+i+'" class="'+(got.indexOf(a.k)>=0?'got':'')+'" role="button" aria-label="'+a.n+'">'+achSvg(a.k)+'</i>').join('');
-  $('achInfo').textContent='Koppints egy kitűzőre.';
+    '<i data-a="'+i+'" class="'+(got.indexOf(a.k)>=0?'got':'')+'" role="button" aria-label="'+esc(t('ach.'+a.k+'.name'))+'">'+achSvg(a.k)+'</i>').join('');
+  $('achInfo').textContent=t('journal.tapBadge');
+  if(sel>=0) showBadge(sel);
+}
+/* a badge picked on the page: ringed, and its name and condition under the grid */
+function showBadge(i){
+  const a=ACH[i], el=$('achGrid').children[i];
+  for(const x of $('achGrid').children) x.classList.toggle('sel',x===el);
+  $('achInfo').innerHTML=th('journal.badgeInfo',{name:t('ach.'+a.k+'.name'),desc:t('ach.'+a.k+'.desc')})+(achGot().indexOf(a.k)>=0?CHECK_SVG:'');
 }
 $('achGrid').onclick=e=>{
   const el=e.target.closest('i[data-a]'); if(!el) return;
-  const a=ACH[+el.dataset.a];
-  for(const x of $('achGrid').children) x.classList.toggle('sel',x===el);
-  $('achInfo').innerHTML='<b>'+a.n+'</b> — '+a.d+(achGot().indexOf(a.k)>=0?CHECK_SVG:'');
-  beep('tap');
+  showBadge(+el.dataset.a); beep('tap');
 };
 $('bDaily').onclick=()=>{ drawDaily(); $('veilDaily').classList.add('on'); armBack(); beep('tap'); };
 $('bDailyClose').onclick=()=>closePage('veilDaily');
@@ -3395,19 +4365,19 @@ $('bRescue').onclick=()=>{
   if(coins<cost){ beep('no'); return; }
   if(mode==='tray'){
     if(!trayGiveBack()){ beep('no'); return; }
-  }else if(!doShuffle(true)){ toast('Ezt a táblát már nem lehet megkeverni'); beep('no'); return; }
+  }else if(!doShuffle(true)){ toast(t('toast.cannotShuffle')); beep('no'); return; }
   setCoins(coins-cost,true);
   rescues++; usedAid++; updateStars();
   levelDone=false;                           /* the level goes on after all */
   stAdd('time',-lastBanked); lastBanked=0;   /* not a finished level after all */
   if(running) tickClock();                   /* the clock keeps running from t0 */
   endClose();
-  toast(mode==='tray'?'Mentőöv — három csempe visszakerült a táblára':'Mentőöv — megkevertem a maradékot');
+  toast(t(mode==='tray'?'toast.rescueTray':'toast.rescueShuffle'));
   beep('hint');
 };
-$('bReset').onclick=()=>ask('wipe','Minden haladás törlése?',
-  'Szintek, tallérok, a Tár gyűjteménye, a kitűzők és a napi sorozat is elvész. Ez nem vonható vissza — előbb mentsd ki a kódot a Tárból, ha meg akarod tartani.',
-  'Törlöm', wipeAll);
+/* from the settings: a wiped game is shown from the menu, as a fresh one */
+$('bReset').onclick=()=>ask('wipe',t('ask.wipe.title'),t('ask.wipe.text'),t('ask.wipe.yes'),
+  ()=>{ $('veilSettings').classList.remove('on'); wipeAll(); });
 function wipeAll(){
   save('gm_level','1'); save('gm_mem_level','1'); save('gm_zen_level','1');
   save('gm_coins','0'); save('gm_owned',JSON.stringify(BASE_OWNED));
@@ -3423,10 +4393,11 @@ function wipeAll(){
   for(const k of ['solved','time','stars','perfect','best','mem','zen']) save('gm_st_'+k,'0');
   owned=BASE_OWNED.slice(); for(const k in UPG) upg[k]=0; lastRank='';
   curSkin='sk0'; curPack='pk0'; curBg='bg0'; curAccent='ac0'; SYMBOLS=PACKS.pk0.s;
-  setCoins(0); applyStyles(); $('startSub').textContent='Végtelen szintek egy elvarázsolt kastélyban.';
-  refreshStart(); toast('Minden nulláról indul'); beep('tap');
+  setCoins(0); applyStyles(); $('startSub').textContent=t('home.tagline');
+  refreshStart(); toast(t('toast.wiped')); beep('tap');
 }
-refreshStart();
+applyStatic(); refreshStart();
+if(askLang) langAsk();
 
 /* ---------------- Android back button ----------------
    The app is a single page with no navigation, so the system back button would
@@ -3442,7 +4413,7 @@ function backStep(){
   if($('veilAsk').classList.contains('on')){
     askFn=null; $('veilAsk').classList.remove('on'); beep('tap'); return true;
   }
-  for(const id of ['veilHelp','veilLevels','veilStats','veilDaily','veilShop'])
+  for(const id of ['veilHelp','veilSettings','veilLevels','veilStats','veilDaily','veilShop'])
     if($(id).classList.contains('on')){ closePage(id); return true; }
   if($('veilEnd').classList.contains('on')){
     endClose(); startLevel(level); return true;
@@ -3461,7 +4432,7 @@ function closePage(id){
 /* Leaving a level abandons it — the same thing the system back button does. */
 function toMenu(){
   clearInterval(timer); timer=null; running=false;
-  for(const id of ['veilShop','veilDaily','veilStats','veilLevels','veilHelp','veilAsk']) $(id).classList.remove('on');
+  for(const id of ['veilShop','veilDaily','veilStats','veilLevels','veilHelp','veilSettings','veilAsk']) $(id).classList.remove('on');
   endClose(); askFn=null;
   $('veilStart').classList.add('on'); document.body.classList.add('home'); refreshStart();
   buildScene();
@@ -3494,7 +4465,8 @@ function tileRect(t){
 }
 function fit(keepZoom){
   if(!tiles.length) return;
-  $('uiShape').style.fontSize='';   /* measured at its full size (see fitHead) */
+  if(headBare) headName(headNow);   /* measured whole and at its full size (see fitHead) */
+  $('uiShape').style.fontSize='';
   measureStage(); fitHead();
   let mx=0,my=0,ml=0;
   for(const t of tiles){ mx=Math.max(mx,t.x); my=Math.max(my,t.y); ml=Math.max(ml,t.l); }
@@ -3511,10 +4483,28 @@ function fit(keepZoom){
    ikertorony", a daily's "Napi · Fogaskerék · torony") next to five digits of coins is
    set as much smaller as it needs, down to 15 px, and only past that loses its end to
    the ellipsis. Run in fit, right after measureStage has brought the layout up to date,
-   so the reading costs no layout of its own. Text width scales with the size. */
+   so the reading costs no layout of its own. Text width scales with the size, and is
+   measured to a fraction of a pixel (see textFit), with half a pixel to spare. A daily
+   that would still be cut at 15 px gives up its "Napi" first (the ⚑ says it), at the cost
+   of one more reading. */
 function fitHead(){
-  const h=$('uiShape'), sw=h.scrollWidth, cw=h.clientWidth;
-  if(sw>cw) h.style.fontSize=Math.max(15,Math.floor(20*(cw-1)/sw*4)/4)+'px';
+  const h=$('uiShape'); let f=textFit(h);
+  if(!f||f.text<=f.room) return;
+  if(headNow&&headNow.daily&&!headBare&&20*(f.room-.5)/f.text<15){
+    headName(headNow,true); f=textFit(h); if(f.text<=f.room) return;
+  }
+  h.style.fontSize=Math.max(15,Math.floor(20*(f.room-.5)/f.text*4)/4)+'px';
+}
+/* A one-line text's width and its box's, to a 64th of a pixel, in layout px: the ellipsis
+   cuts at any overflow, but scrollWidth and clientWidth are whole pixels, and a name a
+   fraction of a pixel too wide reads as fitting. The text's rect is scaled back by its
+   box's, so a page still rising in (scaled) measures the same. Null if not laid out. */
+function textFit(e){
+  const cs=getComputedStyle(e), r=e.getBoundingClientRect(); if(!r.width) return null;
+  const px=p=>parseFloat(cs[p])||0, box=px('width');   /* border-box (see *) */
+  const room=box-px('paddingLeft')-px('paddingRight')-px('borderLeftWidth')-px('borderRightWidth');
+  const g=document.createRange(); g.selectNodeContents(e);
+  return {text:g.getBoundingClientRect().width*box/r.width, room};
 }
 function clampView(){
   vNow.s=Math.max(vBase.s, Math.min(vBase.s*MAXZ, vNow.s));
@@ -3845,7 +4835,7 @@ const ptrUp=e=>{
     /* double tap in the same spot while zoomed in = back to fit */
     const now=Date.now();
     if(now-lastTap<320&&Math.hypot(e.clientX-lastTapX,e.clientY-lastTapY)<26){
-      fit(); toast('Nézet visszaállítva'); lastTap=0;
+      fit(); toast(t('toast.viewReset')); lastTap=0;
     }else{ lastTap=now; lastTapX=e.clientX; lastTapY=e.clientY; }
   }
 };
@@ -4575,7 +5565,7 @@ let chordIx=0, musicDelay=null, bells=0;
 function startMusic(){
   if(CUSTOM_MUSIC_URL){
     if(!audioEl){ audioEl=new Audio(CUSTOM_MUSIC_URL); audioEl.loop=true; audioEl.volume=.45; }
-    audioEl.play().catch(()=>toast('A zenefájl csak helyben futtatva szól'));
+    audioEl.play().catch(()=>toast(t('toast.musicLocal')));
     return;
   }
   ensureAudio(); if(!ac||musicTimer) return;
@@ -4648,8 +5638,9 @@ function stopMusic(){
   }
 }
 function syncSwitches(){
-  $('stSfx').textContent = sfxOn?'be':'ki';
-  $('stMusic').textContent = musicOn?'be':'ki';
+  $('stSfx').textContent=t(sfxOn?'settings.on':'settings.off');
+  $('stMusic').textContent=t(musicOn?'settings.on':'settings.off');
+  $('stSave').textContent=t($('swSave').classList.contains('on')?'settings.close':'settings.open');
   $('swSfx').classList.toggle('on',sfxOn);
   $('swMusic').classList.toggle('on',musicOn);
   $('swSfx').setAttribute('aria-checked',sfxOn); $('swMusic').setAttribute('aria-checked',musicOn);
@@ -4679,13 +5670,14 @@ function exportSave(){
   for(let i=1;i<=top;i++){ const b=load('gm_best_'+i,''); if(b) o.best[i]=b; }
   return 'GYM1.'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
 }
+/* null when the code was loaded, else the key of what is wrong with it (save.err.*) */
 function importSave(txt){
   const s=(txt||'').trim().replace(/\s+/g,'');
-  if(s.slice(0,5)!=='GYM1.') return 'Ez nem mentéskód.';
+  if(s.slice(0,5)!=='GYM1.') return 'save.err.notCode';
   let o; try{ o=JSON.parse(decodeURIComponent(escape(atob(s.slice(5))))); }
-  catch(e){ return 'A kód sérült vagy hiányos.'; }
-  if(!o||typeof o!=='object') return 'A kód sérült vagy hiányos.';
-  if(!(parseInt(o.gm_level,10)>0)) return 'A kódból hiányzik a szint.';
+  catch(e){ return 'save.err.corrupt'; }
+  if(!o||typeof o!=='object') return 'save.err.corrupt';
+  if(!(parseInt(o.gm_level,10)>0)) return 'save.err.noLevel';
   for(const k of SAVE_KEYS) if(typeof o[k]==='string') save(k,o[k]);
   /* a code from before the accents has none: the default, not this device's (and the
      load falls back to it anyway when the accent is not owned, see curAccent) */
@@ -4696,24 +5688,24 @@ function importSave(txt){
 $('swSave').onclick=()=>{
   const w=$('saveWrap'), open=w.style.display==='none';
   w.style.display=open?'':'none';
-  $('stSave').textContent=open?'zár':'nyit';
+  $('stSave').textContent=t(open?'settings.close':'settings.open');
   $('swSave').classList.toggle('on',open);
   if(open) $('saveTxt').value=exportSave();
   beep('tap');
 };
 $('bSaveCopy').onclick=async()=>{
-  const t=$('saveTxt'); t.focus(); t.select();
-  try{ await navigator.clipboard.writeText(t.value); toast('Vágólapra másolva'); }
+  const ta=$('saveTxt'); ta.focus(); ta.select();
+  try{ await navigator.clipboard.writeText(ta.value); toast(t('toast.copied')); }
   catch(e){
-    try{ document.execCommand('copy'); toast('Vágólapra másolva'); }
-    catch(e2){ toast('Jelöld ki, és másold ki kézzel'); }
+    try{ document.execCommand('copy'); toast(t('toast.copied')); }
+    catch(e2){ toast(t('toast.copyManually')); }
   }
   beep('tap');
 };
 $('bSaveLoad').onclick=()=>{
   const err=importSave($('saveTxt').value);
-  if(err){ toast(err); beep('no'); return; }
-  toast('Mentés visszatöltve'); beep('ok');
+  if(err){ toast(t(err)); beep('no'); return; }
+  toast(t('toast.saveLoaded')); beep('ok');
   setTimeout(()=>location.reload(),800);
 };
 /* Ask for persistent storage: without it the browser may evict the save when the
@@ -4726,7 +5718,7 @@ $('bSaveLoad').onclick=()=>{
 document.addEventListener('contextmenu',e=>e.preventDefault());
 applyStyles(); setCoins(coins); syncSwitches(); preloadPack(SYMBOLS);
 /* the title in the sky is measured for the scene: measure again once the type is in */
-if(document.fonts) document.fonts.ready.then(buildScene);
+if(document.fonts) document.fonts.ready.then(()=>{ fitOver(); buildScene(); });
 
 /* ================= alkalmazásként futás ================= */
 /* offline működés — csak kiszolgálóról (https vagy localhost) indul el,
